@@ -9,24 +9,33 @@ import AuthForm from "@/components/auth/AuthForm";
 import StudentDashboard from "@/components/dashboard/StudentDashboard";
 import AspirantDashboard from "@/components/dashboard/AspirantDashboard";
 import Navigation from "@/components/Navigation";
+import HomePage from "@/pages/HomePage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { useState } from "react";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { user, profile, loading } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading UNIOSUN Connect...</p>
+        </div>
       </div>
     );
   }
 
   if (!user || !profile) {
-    return <AuthForm />;
+    if (!showAuth) {
+      return <HomePage onGetStarted={() => setShowAuth(true)} />;
+    }
+    return <AuthForm onBack={() => setShowAuth(false)} />;
   }
 
   return (
