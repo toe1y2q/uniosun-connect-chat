@@ -1,35 +1,61 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle, X, Award, Clock, RefreshCw, BookOpen, Trophy, Zap } from 'lucide-react';
+import { BookOpen, Clock, Trophy, CheckCircle, XCircle, RotateCcw, Award } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-interface QuizResult {
-  score: number;
-  passed: boolean;
-}
-
-interface QuizSubmission {
-  answers: number[];
-  questions: any[];
+interface Question {
+  id: string;
+  question: string;
+  options: string[];
+  correct_answer: number;
 }
 
 const QuizSection = () => {
   const { profile, updateProfile } = useAuth();
-  const [currentQuiz, setCurrentQuiz] = useState<any[] | null>(null);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [userAnswers, setUserAnswers] = useState<number[]>([]);
-  const [showResults, setShowResults] = useState(false);
-  const [quizStarted, setQuizStarted] = useState(false);
   const queryClient = useQueryClient();
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
+  const [timeLeft, setTimeLeft] = useState(900); // 15 minutes
+  const [isQuizActive, setIsQuizActive] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
 
+  // Check if user can take quiz
+  const canTakeQuiz = profile?.is_verified && !profile?.badge;
+  const hasPassedQuiz = profile?.badge;
+  const needsVerification = !profile?.is_verified;
+
+  // Fetch quiz questions for user's department
+  const { data: questions, isLoading: loadingQuestions } = useQuery({
+    queryKey: ['quiz-questions', profile?.department_id],
+    queryFn: async () => {
+      if (!profile?.department_id) return [];
+      
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('department_id', profile.department_id)
+        .limit(15);
+      
+      if (error) throw error;
+      
+      return data.map(q => ({
+        ...q,
+        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string)
+      })) as Question[];
+    },
+    enabled: !!profile?.department_id && canTakeQuiz
+  });
+
+  // Fetch last quiz attempt
   const { data: lastAttempt } = useQuery({
     queryKey: ['last-quiz-attempt', profile?.id],
     queryFn: async () => {
@@ -49,407 +75,395 @@ const QuizSection = () => {
     enabled: !!profile?.id
   });
 
-  const { data: questions } = useQuery({
-    queryKey: ['quiz-questions', profile?.department_id],
-    queryFn: async () => {
-      if (!profile?.department_id) return [];
-      
-      const { data, error } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('department_id', profile.department_id);
-      
-      if (error) throw error;
-      
-      // Shuffle and take 15 questions
-      const shuffled = data.sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, 15);
-    },
-    enabled: !!profile?.department_id && !profile?.badge
-  });
+  // Check if user can retry (24 hours after last attempt)
+  const canRetry = !lastAttempt || 
+    (lastAttempt.next_attempt_at && new Date() > new Date(lastAttempt.next_attempt_at));
 
-  const submitQuizMutation = useMutation<QuizResult, Error, QuizSubmission>({
-    mutationFn: async ({ answers, questions }) => {
-      if (!profile?.id || !profile?.department_id) {
-        throw new Error('User profile not found');
-      }
+  // Submit quiz mutation
+  const submitQuizMutation = useMutation({
+    mutationFn: async ({ score, passed }: { score: number; passed: boolean }) => {
+      if (!profile?.id || !profile?.department_id) throw new Error('Missing user data');
 
-      const score = answers.reduce((acc, answer, index) => {
-        return acc + (answer === questions[index].correct_answer ? 1 : 0);
-      }, 0);
-      
-      const percentage = Math.round((score / questions.length) * 100);
-      const passed = percentage >= 70;
-
+      // Insert quiz attempt
       const { error: attemptError } = await supabase
         .from('quiz_attempts')
         .insert({
           user_id: profile.id,
           department_id: profile.department_id,
-          score: percentage,
-          total_questions: questions.length,
+          score,
+          total_questions: questions?.length || 15,
           passed,
           next_attempt_at: passed ? null : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
         });
 
       if (attemptError) throw attemptError;
 
+      // Update user profile if passed
       if (passed) {
-        await updateProfile({ 
-          quiz_score: percentage, 
-          badge: true 
-        });
-      } else {
-        await updateProfile({ quiz_score: percentage });
+        const { error: userError } = await supabase
+          .from('users')
+          .update({ 
+            quiz_score: score,
+            badge: true 
+          })
+          .eq('id', profile.id);
+
+        if (userError) throw userError;
       }
 
-      return { score: percentage, passed };
+      return { score, passed };
     },
-    onSuccess: (result) => {
+    onSuccess: (data) => {
+      setQuizScore(data.score);
       setShowResults(true);
-      queryClient.invalidateQueries({ queryKey: ['last-quiz-attempt'] });
+      setIsQuizActive(false);
       
-      if (result.passed) {
+      if (data.passed) {
         toast({
-          title: '🎉 Congratulations!',
-          description: `You scored ${result.score}% and earned your verified badge!`
+          title: "🎉 Congratulations!",
+          description: "You've passed the quiz and earned your badge! You can now receive session bookings.",
         });
+        updateProfile({ quiz_score: data.score, badge: true });
       } else {
         toast({
-          title: 'Quiz Failed',
-          description: `You scored ${result.score}%. Try again in 24 hours.`,
-          variant: 'destructive'
+          title: "Quiz Completed",
+          description: "You can retry after 24 hours. Keep studying!",
         });
       }
+      
+      queryClient.invalidateQueries({ queryKey: ['last-quiz-attempt'] });
+    },
+    onError: (error) => {
+      console.error('Quiz submission error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit quiz. Please try again.",
+        variant: "destructive"
+      });
     }
   });
 
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isQuizActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            handleSubmitQuiz();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => clearInterval(interval);
+  }, [isQuizActive, timeLeft]);
+
   const startQuiz = () => {
-    if (questions) {
-      setCurrentQuiz(questions);
-      setCurrentQuestionIndex(0);
-      setUserAnswers([]);
-      setSelectedAnswer(null);
-      setShowResults(false);
-      setQuizStarted(true);
+    setIsQuizActive(true);
+    setCurrentQuestionIndex(0);
+    setSelectedAnswers([]);
+    setTimeLeft(900);
+    setShowResults(false);
+  };
+
+  const handleAnswerSelect = (answerIndex: number) => {
+    const newAnswers = [...selectedAnswers];
+    newAnswers[currentQuestionIndex] = answerIndex;
+    setSelectedAnswers(newAnswers);
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < (questions?.length || 0) - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
     }
   };
 
-  const nextQuestion = () => {
-    if (selectedAnswer === null || !currentQuiz) return;
-    
-    const newAnswers = [...userAnswers, selectedAnswer];
-    setUserAnswers(newAnswers);
-
-    if (currentQuestionIndex < currentQuiz.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setSelectedAnswer(null);
-    } else {
-      // Quiz completed
-      submitQuizMutation.mutate({ 
-        answers: newAnswers, 
-        questions: currentQuiz 
-      });
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
     }
   };
 
-  const canTakeQuiz = () => {
-    if (!profile?.is_verified) return false;
-    if (profile?.badge) return false;
-    if (!lastAttempt) return true;
+  const handleSubmitQuiz = () => {
+    if (!questions) return;
     
-    if (!lastAttempt.next_attempt_at) return false;
-    const nextAttemptTime = new Date(lastAttempt.next_attempt_at);
-    return new Date() > nextAttemptTime;
+    const correctAnswers = selectedAnswers.reduce((count, answer, index) => {
+      return answer === questions[index]?.correct_answer ? count + 1 : count;
+    }, 0);
+    
+    const score = Math.round((correctAnswers / questions.length) * 100);
+    const passed = score >= 70;
+    
+    submitQuizMutation.mutate({ score, passed });
   };
 
-  const getTimeUntilNextAttempt = () => {
-    if (!lastAttempt?.next_attempt_at) return null;
-    
-    const nextAttemptTime = new Date(lastAttempt.next_attempt_at);
-    const now = new Date();
-    const diff = nextAttemptTime.getTime() - now.getTime();
-    
-    if (diff <= 0) return null;
-    
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${hours}h ${minutes}m`;
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (!profile?.is_verified) {
+  // Loading state
+  if (loadingQuestions) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-2xl mx-auto"
-      >
-        <Card className="overflow-hidden">
-          <CardContent className="p-12 text-center">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="w-16 h-16 mx-auto mb-6"
-            >
-              <Clock className="w-full h-full text-amber-500" />
-            </motion.div>
-            <h3 className="text-xl font-bold mb-3 text-gray-800">Verification in Progress</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Your JAMB registration is being verified by our admin team. 
-              This usually takes 1-2 business days. Once verified, you'll be able to take the quiz!
-            </p>
+      <div className="space-y-6">
+        <Card className="animate-pulse">
+          <CardContent className="p-8">
+            <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
     );
   }
 
-  if (profile?.badge) {
+  // Show results
+  if (showResults) {
+    const passed = quizScore >= 70;
+    
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="max-w-2xl mx-auto"
+        className="space-y-6"
       >
-        <Card className="overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-          <CardContent className="p-12 text-center">
+        <Card className={`border-2 ${passed ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
+          <CardContent className="p-8 text-center">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center"
+              transition={{ delay: 0.2, type: "spring" }}
             >
-              <Trophy className="w-10 h-10 text-green-600" />
+              {passed ? (
+                <Trophy className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              ) : (
+                <XCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
+              )}
             </motion.div>
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <h3 className="text-2xl font-bold mb-3 text-green-800">Quiz Mastered! 🎓</h3>
-              <p className="text-green-700 mb-4 text-lg">
-                You scored {profile.quiz_score}% and earned your verified badge!
-              </p>
-              <Badge className="bg-green-600 text-white px-4 py-2 text-sm">
-                <Award className="w-4 h-4 mr-2" />
-                Verified UNIOSUN Talent
+            
+            <h2 className="text-2xl font-bold mb-4">
+              {passed ? '🎉 Congratulations!' : 'Quiz Completed'}
+            </h2>
+            
+            <div className="text-6xl font-bold mb-4">
+              <span className={passed ? 'text-green-600' : 'text-red-600'}>
+                {quizScore}%
+              </span>
+            </div>
+            
+            <p className="text-lg text-gray-700 mb-6">
+              {passed 
+                ? "You've earned your badge and can now receive bookings!"
+                : "You need 70% to pass. You can retry in 24 hours."
+              }
+            </p>
+            
+            {passed && (
+              <Badge className="bg-green-100 text-green-800 text-lg px-4 py-2">
+                <Award className="w-5 h-5 mr-2" />
+                Verified Talent
               </Badge>
-            </motion.div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
     );
   }
 
-  if (currentQuiz && !showResults) {
-    const currentQuestion = currentQuiz[currentQuestionIndex];
-    const progress = ((currentQuestionIndex + 1) / currentQuiz.length) * 100;
+  // Quiz interface
+  if (isQuizActive && questions) {
+    const currentQuestion = questions[currentQuestionIndex];
+    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
     
     return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="max-w-3xl mx-auto"
-      >
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <motion.h2 
-              initial={{ x: -20 }}
-              animate={{ x: 0 }}
-              className="text-2xl font-bold text-gray-800"
-            >
-              UNIOSUN Knowledge Quiz
-            </motion.h2>
-            <Badge variant="outline" className="px-3 py-1">
-              {currentQuestionIndex + 1} of {currentQuiz.length}
-            </Badge>
-          </div>
-          
-          <div className="relative">
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-              <motion.div 
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-              />
+      <div className="space-y-6">
+        {/* Timer and Progress */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-blue-600" />
+                <span className="font-semibold text-lg">
+                  Time Left: {formatTime(timeLeft)}
+                </span>
+              </div>
+              <div className="text-sm text-gray-600">
+                Question {currentQuestionIndex + 1} of {questions.length}
+              </div>
             </div>
-            <motion.div 
-              className="absolute right-0 -top-8 text-sm font-medium text-indigo-600"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              {Math.round(progress)}%
-            </motion.div>
-          </div>
-        </div>
+            <Progress value={progress} className="h-2" />
+          </CardContent>
+        </Card>
 
+        {/* Question Card */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentQuestionIndex}
-            initial={{ opacity: 0, x: 50, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -50, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
           >
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg leading-relaxed text-gray-800">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">
                   {currentQuestion.question}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {currentQuestion.options.map((option: string, index: number) => (
-                  <motion.button
+              <CardContent className="space-y-4">
+                {currentQuestion.options.map((option, index) => (
+                  <motion.div
                     key={index}
-                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setSelectedAnswer(index)}
-                    className={`w-full p-4 text-left rounded-xl border-2 transition-all font-medium ${
-                      selectedAnswer === index
-                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-md'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
                   >
-                    <div className="flex items-center">
-                      <div className={`w-5 h-5 rounded-full mr-4 border-2 flex items-center justify-center ${
-                        selectedAnswer === index
-                          ? 'border-indigo-500 bg-indigo-500'
-                          : 'border-gray-300'
-                      }`}>
-                        {selectedAnswer === index && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="w-2 h-2 rounded-full bg-white"
-                          />
-                        )}
+                    <Button
+                      variant={selectedAnswers[currentQuestionIndex] === index ? "default" : "outline"}
+                      className="w-full text-left justify-start p-4 h-auto whitespace-normal"
+                      onClick={() => handleAnswerSelect(index)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                          selectedAnswers[currentQuestionIndex] === index 
+                            ? 'bg-blue-600 border-blue-600' 
+                            : 'border-gray-300'
+                        }`}>
+                          {selectedAnswers[currentQuestionIndex] === index && (
+                            <CheckCircle className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+                        <span className="text-sm">{option}</span>
                       </div>
-                      <span className="flex-1">{option}</span>
-                    </div>
-                  </motion.button>
+                    </Button>
+                  </motion.div>
                 ))}
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="pt-4"
-                >
-                  <Button 
-                    onClick={nextQuestion}
-                    disabled={selectedAnswer === null}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {currentQuestionIndex === currentQuiz.length - 1 ? (
-                      <>
-                        <Zap className="w-4 h-4 mr-2" />
-                        Submit Quiz
-                      </>
-                    ) : (
-                      <>
-                        Next Question
-                        <motion.div
-                          animate={{ x: [0, 4, 0] }}
-                          transition={{ duration: 1.5, repeat: Infinity }}
-                          className="ml-2"
-                        >
-                          →
-                        </motion.div>
-                      </>
-                    )}
-                  </Button>
-                </motion.div>
               </CardContent>
             </Card>
           </motion.div>
         </AnimatePresence>
-      </motion.div>
+
+        {/* Navigation */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex justify-between items-center">
+              <Button
+                variant="outline"
+                onClick={handlePreviousQuestion}
+                disabled={currentQuestionIndex === 0}
+              >
+                Previous
+              </Button>
+              
+              <div className="text-sm text-gray-600">
+                {selectedAnswers.filter(a => a !== undefined).length} / {questions.length} answered
+              </div>
+              
+              {currentQuestionIndex === questions.length - 1 ? (
+                <Button
+                  onClick={handleSubmitQuiz}
+                  disabled={selectedAnswers.filter(a => a !== undefined).length !== questions.length}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Submit Quiz
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNextQuestion}
+                  disabled={selectedAnswers[currentQuestionIndex] === undefined}
+                >
+                  Next
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
+  // Quiz status display
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto"
-    >
-      <Card className="overflow-hidden shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <BookOpen className="w-6 h-6" />
-            UNIOSUN Knowledge Quiz
-          </CardTitle>
-          <CardDescription className="text-indigo-100">
-            Test your knowledge about UNIOSUN to earn your verified badge and start receiving bookings.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          {lastAttempt && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-gray-50 rounded-lg"
-            >
-              <h4 className="font-semibold mb-2 text-gray-800">Previous Attempt</h4>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-700">Score: {lastAttempt.score}%</span>
-                <Badge className={lastAttempt.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                  {lastAttempt.passed ? 'Passed ✓' : 'Failed ✗'}
-                </Badge>
-              </div>
-              {!lastAttempt.passed && getTimeUntilNextAttempt() && (
-                <p className="text-sm text-amber-600 mt-2 flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  Next attempt in: {getTimeUntilNextAttempt()}
-                </p>
-              )}
-            </motion.div>
-          )}
+    <div className="space-y-6">
+      {needsVerification && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-6 text-center">
+            <Clock className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Verification Pending</h3>
+            <p className="text-gray-600">
+              Your account is being verified by our admin team. You'll be able to take the quiz once verified.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
-          <div className="space-y-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="bg-blue-50 p-4 rounded-lg"
+      {hasPassedQuiz && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="p-6 text-center">
+            <Trophy className="w-12 h-12 text-green-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Quiz Completed!</h3>
+            <p className="text-gray-600 mb-4">
+              You've successfully passed the quiz with a score of {profile.quiz_score}%
+            </p>
+            <Badge className="bg-green-100 text-green-800">
+              <Award className="w-4 h-4 mr-1" />
+              Verified Talent
+            </Badge>
+          </CardContent>
+        </Card>
+      )}
+
+      {canTakeQuiz && !hasPassedQuiz && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="w-6 h-6" />
+              Department Quiz
+            </CardTitle>
+            <CardDescription>
+              Take the quiz to become a verified talent and start receiving bookings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">15</div>
+                <div className="text-sm text-gray-600">Questions</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">15</div>
+                <div className="text-sm text-gray-600">Minutes</div>
+              </div>
+              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                <div className="text-2xl font-bold text-orange-600">70%</div>
+                <div className="text-sm text-gray-600">Pass Score</div>
+              </div>
+            </div>
+
+            {!canRetry && lastAttempt && (
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <RotateCcw className="w-8 h-8 text-red-600 mx-auto mb-2" />
+                <p className="text-sm text-red-600">
+                  You can retry after: {new Date(lastAttempt.next_attempt_at!).toLocaleString()}
+                </p>
+              </div>
+            )}
+
+            <Button
+              onClick={startQuiz}
+              disabled={!canRetry || !questions?.length}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              size="lg"
             >
-              <h4 className="font-semibold text-blue-800 mb-2">Quiz Requirements:</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• 15 randomly selected questions about UNIOSUN</li>
-                <li>• 70% minimum score required to pass</li>
-                <li>• If you fail, retry after 24 hours</li>
-                <li>• Passing unlocks your verified badge</li>
-              </ul>
-            </motion.div>
-            
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button 
-                onClick={startQuiz}
-                disabled={!canTakeQuiz() || !questions?.length}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50"
-              >
-                {!canTakeQuiz() && getTimeUntilNextAttempt() ? (
-                  <>
-                    <Clock className="w-4 h-4 mr-2" />
-                    Try again in {getTimeUntilNextAttempt()}
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4 mr-2" />
-                    Start Quiz Challenge
-                  </>
-                )}
-              </Button>
-            </motion.div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+              {!canRetry ? 'Quiz Attempt Pending' : 'Start Quiz'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 

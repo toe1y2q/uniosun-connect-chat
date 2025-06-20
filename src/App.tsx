@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/components/auth/AuthContext";
 import AuthForm from "@/components/auth/AuthForm";
 import StudentDashboard from "@/components/dashboard/StudentDashboard";
 import AspirantDashboard from "@/components/dashboard/AspirantDashboard";
+import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import Navigation from "@/components/Navigation";
 import HomePage from "@/pages/HomePage";
 import Index from "./pages/Index";
@@ -38,10 +39,24 @@ const AppContent = () => {
     return <AuthForm onBack={() => setShowAuth(false)} />;
   }
 
+  // Role-based dashboard rendering
+  const renderDashboard = () => {
+    switch (profile.role) {
+      case 'admin':
+        return <AdminDashboard />;
+      case 'student':
+        return <StudentDashboard />;
+      case 'aspirant':
+        return <AspirantDashboard />;
+      default:
+        return <AspirantDashboard />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      {profile.role === 'student' ? <StudentDashboard /> : <AspirantDashboard />}
+      {renderDashboard()}
     </div>
   );
 };
@@ -55,7 +70,6 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<AppContent />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
