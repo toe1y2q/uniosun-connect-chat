@@ -9,7 +9,432 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      chat_messages: {
+        Row: {
+          created_at: string | null
+          flagged_reason: string | null
+          id: string
+          is_flagged: boolean | null
+          message: string
+          sender_id: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          flagged_reason?: string | null
+          id?: string
+          is_flagged?: boolean | null
+          message: string
+          sender_id: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string | null
+          flagged_reason?: string | null
+          id?: string
+          is_flagged?: boolean | null
+          message?: string
+          sender_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          correct_answer: number
+          created_at: string | null
+          department_id: string
+          id: string
+          options: Json
+          question: string
+        }
+        Insert: {
+          correct_answer: number
+          created_at?: string | null
+          department_id: string
+          id?: string
+          options: Json
+          question: string
+        }
+        Update: {
+          correct_answer?: number
+          created_at?: string | null
+          department_id?: string
+          id?: string
+          options?: Json
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_attempts: {
+        Row: {
+          created_at: string | null
+          department_id: string | null
+          id: string
+          next_attempt_at: string | null
+          passed: boolean | null
+          score: number
+          total_questions: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department_id?: string | null
+          id?: string
+          next_attempt_at?: string | null
+          passed?: boolean | null
+          score: number
+          total_questions: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department_id?: string | null
+          id?: string
+          next_attempt_at?: string | null
+          passed?: boolean | null
+          score?: number
+          total_questions?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string | null
+          flagged_by: string
+          id: string
+          message_id: string
+          reason: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          flagged_by: string
+          id?: string
+          message_id: string
+          reason: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          flagged_by?: string
+          id?: string
+          message_id?: string
+          reason?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_flagged_by_fkey"
+            columns: ["flagged_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          rating: number | null
+          reviewer_id: string
+          session_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number | null
+          reviewer_id: string
+          session_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number | null
+          reviewer_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string | null
+          duration: number
+          id: string
+          payment_status: string | null
+          paystack_reference: string | null
+          scheduled_at: string
+          status: Database["public"]["Enums"]["session_status"] | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string | null
+          duration: number
+          id?: string
+          payment_status?: string | null
+          paystack_reference?: string | null
+          scheduled_at: string
+          status?: Database["public"]["Enums"]["session_status"] | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string | null
+          duration?: number
+          id?: string
+          payment_status?: string | null
+          paystack_reference?: string | null
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["session_status"] | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          reference: string | null
+          session_id: string | null
+          status: Database["public"]["Enums"]["transaction_status"] | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reference?: string | null
+          session_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reference?: string | null
+          session_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          type?: Database["public"]["Enums"]["transaction_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          badge: boolean | null
+          created_at: string | null
+          department_id: string | null
+          email: string
+          id: string
+          is_verified: boolean | null
+          jamb_reg: string | null
+          name: string
+          profile_image: string | null
+          quiz_score: number | null
+          role: Database["public"]["Enums"]["user_role"]
+          status: Database["public"]["Enums"]["user_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          badge?: boolean | null
+          created_at?: string | null
+          department_id?: string | null
+          email: string
+          id?: string
+          is_verified?: boolean | null
+          jamb_reg?: string | null
+          name: string
+          profile_image?: string | null
+          quiz_score?: number | null
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["user_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          badge?: boolean | null
+          created_at?: string | null
+          department_id?: string | null
+          email?: string
+          id?: string
+          is_verified?: boolean | null
+          jamb_reg?: string | null
+          name?: string
+          profile_image?: string | null
+          quiz_score?: number | null
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["user_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +443,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      session_status: "pending" | "confirmed" | "completed" | "cancelled"
+      transaction_status: "pending" | "completed" | "failed"
+      transaction_type: "payment" | "withdrawal" | "earning"
+      user_role: "student" | "aspirant" | "admin"
+      user_status: "active" | "pending" | "blocked" | "banned"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +562,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      session_status: ["pending", "confirmed", "completed", "cancelled"],
+      transaction_status: ["pending", "completed", "failed"],
+      transaction_type: ["payment", "withdrawal", "earning"],
+      user_role: ["student", "aspirant", "admin"],
+      user_status: ["active", "pending", "blocked", "banned"],
+    },
   },
 } as const
