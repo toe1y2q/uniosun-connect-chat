@@ -10,12 +10,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle, X, Award, Clock, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
+interface QuizResult {
+  score: number;
+  passed: boolean;
+}
+
+interface QuizSubmission {
+  answers: number[];
+  questions: any[];
+}
+
 const QuizSection = () => {
   const { profile, updateProfile } = useAuth();
-  const [currentQuiz, setCurrentQuiz] = useState(null);
+  const [currentQuiz, setCurrentQuiz] = useState<any[] | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [userAnswers, setUserAnswers] = useState([]);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const queryClient = useQueryClient();
 
@@ -57,8 +67,12 @@ const QuizSection = () => {
     enabled: !!profile?.department_id && !profile?.badge
   });
 
-  const submitQuizMutation = useMutation({
+  const submitQuizMutation = useMutation<QuizResult, Error, QuizSubmission>({
     mutationFn: async ({ answers, questions }) => {
+      if (!profile?.id || !profile?.department_id) {
+        throw new Error('User profile not found');
+      }
+
       const score = answers.reduce((acc, answer, index) => {
         return acc + (answer === questions[index].correct_answer ? 1 : 0);
       }, 0);
@@ -110,14 +124,18 @@ const QuizSection = () => {
   });
 
   const startQuiz = () => {
-    setCurrentQuiz(questions);
-    setCurrentQuestionIndex(0);
-    setUserAnswers([]);
-    setSelectedAnswer(null);
-    setShowResults(false);
+    if (questions) {
+      setCurrentQuiz(questions);
+      setCurrentQuestionIndex(0);
+      setUserAnswers([]);
+      setSelectedAnswer(null);
+      setShowResults(false);
+    }
   };
 
   const nextQuestion = () => {
+    if (selectedAnswer === null || !currentQuiz) return;
+    
     const newAnswers = [...userAnswers, selectedAnswer];
     setUserAnswers(newAnswers);
 
@@ -138,6 +156,7 @@ const QuizSection = () => {
     if (profile?.badge) return false;
     if (!lastAttempt) return true;
     
+    if (!lastAttempt.next_attempt_at) return false;
     const nextAttemptTime = new Date(lastAttempt.next_attempt_at);
     return new Date() > nextAttemptTime;
   };
@@ -147,7 +166,7 @@ const QuizSection = () => {
     
     const nextAttemptTime = new Date(lastAttempt.next_attempt_at);
     const now = new Date();
-    const diff = nextAttemptTime - now;
+    const diff = nextAttemptTime.getTime() - now.getTime();
     
     if (diff <= 0) return null;
     
@@ -222,7 +241,7 @@ const QuizSection = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {currentQuestion.options.map((option, index) => (
+                {currentQuestion.options.map((option: string, index: number) => (
                   <motion.button
                     key={index}
                     whileHover={{ scale: 1.02 }}
