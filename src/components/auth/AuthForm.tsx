@@ -10,7 +10,8 @@ import { useAuth } from './AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, GraduationCap, Users, Mail, Lock, User, BookOpen } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Users, Mail, Lock, User, BookOpen, Home } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface AuthFormProps {
   onBack?: () => void;
@@ -83,7 +84,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -91,25 +92,31 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
       >
         {/* Header */}
         <div className="text-center mb-8">
-          {onBack && (
-            <motion.button
-              onClick={onBack}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="absolute top-4 left-4 p-2 rounded-full bg-white/80 backdrop-blur-md border border-indigo-100"
-            >
-              <ArrowLeft className="w-5 h-5 text-indigo-600" />
-            </motion.button>
-          )}
+          <div className="flex items-center justify-between mb-4">
+            {onBack && (
+              <motion.button
+                onClick={onBack}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-2 rounded-full bg-white/80 backdrop-blur-md border border-green-100"
+              >
+                <ArrowLeft className="w-5 h-5 text-green-600" />
+              </motion.button>
+            )}
+            <Link to="/" className="p-2 rounded-full bg-white/80 backdrop-blur-md border border-green-100">
+              <Home className="w-5 h-5 text-green-600" />
+            </Link>
+          </div>
+          
           <div className="flex items-center justify-center gap-3 mb-4">
             <motion.div
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.6 }}
-              className="w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center"
+              className="w-12 h-12 bg-gradient-to-r from-green-600 to-green-800 rounded-lg flex items-center justify-center"
             >
               <GraduationCap className="w-7 h-7 text-white" />
             </motion.div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
               UNIOSUN Connect
             </h1>
           </div>
@@ -148,7 +155,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
                         required
-                        className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
+                        className="pl-10 border-gray-200 focus:border-green-500 focus:ring-green-500"
                       />
                     </div>
                   </div>
@@ -158,7 +165,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                       I am a...
                     </Label>
                     <Select value={formData.role} onValueChange={(value: 'student' | 'aspirant') => handleInputChange('role', value)}>
-                      <SelectTrigger className="border-gray-200 focus:border-indigo-500">
+                      <SelectTrigger className="border-gray-200 focus:border-green-500">
                         <div className="flex items-center gap-2">
                           {formData.role === 'student' ? (
                             <GraduationCap className="w-4 h-4 text-gray-400" />
@@ -200,7 +207,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                             value={formData.jamb_reg}
                             onChange={(e) => handleInputChange('jamb_reg', e.target.value)}
                             required
-                            className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
+                            className="pl-10 border-gray-200 focus:border-green-500 focus:ring-green-500"
                           />
                         </div>
                       </div>
@@ -210,7 +217,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                           Department
                         </Label>
                         <Select value={formData.department_id} onValueChange={(value) => handleInputChange('department_id', value)}>
-                          <SelectTrigger className="border-gray-200 focus:border-indigo-500">
+                          <SelectTrigger className="border-gray-200 focus:border-green-500">
                             <SelectValue placeholder="Select your department" />
                           </SelectTrigger>
                           <SelectContent className="max-h-60">
@@ -240,7 +247,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     required
-                    className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
+                    className="pl-10 border-gray-200 focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
               </div>
@@ -258,7 +265,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     required
-                    className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
+                    className="pl-10 border-gray-200 focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
               </div>
@@ -266,7 +273,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
               <Button 
                 type="submit" 
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 rounded-lg font-medium transition-all duration-200"
+                className="w-full bg-gradient-to-r from-green-600 to-green-800 hover:from-green-700 hover:to-green-900 text-white py-3 rounded-lg font-medium transition-all duration-200"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
@@ -286,7 +293,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
               <Button
                 variant="link"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-indigo-600 hover:text-indigo-700 font-medium p-0 h-auto"
+                className="text-green-600 hover:text-green-700 font-medium p-0 h-auto"
               >
                 {isLogin ? 'Sign up here' : 'Sign in here'}
               </Button>

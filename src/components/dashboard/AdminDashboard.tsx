@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -116,7 +115,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-4">
       <div className="max-w-7xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -138,31 +137,31 @@ const AdminDashboard = () => {
 
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
+            <Card className="border-green-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Students</p>
-                    <p className="text-3xl font-bold text-blue-600">{userStats?.totalStudents || 0}</p>
+                    <p className="text-3xl font-bold text-green-600">{userStats?.totalStudents || 0}</p>
                   </div>
-                  <GraduationCap className="w-12 h-12 text-blue-600 opacity-20" />
+                  <GraduationCap className="w-12 h-12 text-green-600 opacity-20" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-green-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Aspirants</p>
-                    <p className="text-3xl font-bold text-purple-600">{userStats?.totalAspirants || 0}</p>
+                    <p className="text-3xl font-bold text-green-600">{userStats?.totalAspirants || 0}</p>
                   </div>
-                  <Users className="w-12 h-12 text-purple-600 opacity-20" />
+                  <Users className="w-12 h-12 text-green-600 opacity-20" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-green-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -174,14 +173,14 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-green-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Active Talents</p>
-                    <p className="text-3xl font-bold text-orange-600">{userStats?.badgedStudents || 0}</p>
+                    <p className="text-3xl font-bold text-green-600">{userStats?.badgedStudents || 0}</p>
                   </div>
-                  <BarChart3 className="w-12 h-12 text-orange-600 opacity-20" />
+                  <BarChart3 className="w-12 h-12 text-green-600 opacity-20" />
                 </div>
               </CardContent>
             </Card>
@@ -189,17 +188,17 @@ const AdminDashboard = () => {
         </motion.div>
 
         <Tabs defaultValue="verification" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="verification">Student Verification</TabsTrigger>
-            <TabsTrigger value="users">User Management</TabsTrigger>
-            <TabsTrigger value="sessions">Session Monitoring</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 bg-green-100">
+            <TabsTrigger value="verification" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Student Verification</TabsTrigger>
+            <TabsTrigger value="users" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">User Management</TabsTrigger>
+            <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Session Monitoring</TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="verification" className="space-y-6">
-            <Card>
+            <Card className="border-green-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-green-800">
                   <Clock className="w-5 h-5" />
                   Pending Student Verifications
                 </CardTitle>
@@ -215,12 +214,12 @@ const AdminDashboard = () => {
                         key={student.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                        className="flex items-center justify-between p-4 border border-green-200 rounded-lg hover:bg-green-50"
                       >
                         <div className="flex items-center gap-4">
-                          <Avatar className="h-12 w-12">
+                          <Avatar className="h-12 w-12 border-2 border-green-200">
                             <AvatarImage src={student.profile_image} />
-                            <AvatarFallback className="bg-indigo-100 text-indigo-600">
+                            <AvatarFallback className="bg-green-100 text-green-600">
                               {student.name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
@@ -250,11 +249,12 @@ const AdminDashboard = () => {
                             onClick={() => handleVerifyStudent(student.id, false)}
                             variant="outline"
                             size="sm"
+                            className="border-red-200 text-red-600 hover:bg-red-50"
                           >
                             <XCircle className="w-4 h-4 mr-1" />
                             Reject
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="text-green-600 hover:bg-green-50">
                             <Eye className="w-4 h-4" />
                           </Button>
                         </div>
@@ -263,7 +263,7 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No pending verifications</h3>
                     <p className="text-gray-600">All student registrations have been processed</p>
                   </div>
@@ -273,14 +273,14 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
-            <Card>
+            <Card className="border-green-200">
               <CardHeader>
-                <CardTitle>User Management</CardTitle>
+                <CardTitle className="text-green-800">User Management</CardTitle>
                 <CardDescription>Manage all platform users</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <Users className="w-12 h-12 text-green-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">User Management</h3>
                   <p className="text-gray-600">Advanced user management features coming soon</p>
                 </div>
@@ -289,16 +289,16 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="sessions" className="space-y-6">
-            <Card>
+            <Card className="border-green-200">
               <CardHeader>
-                <CardTitle>Recent Sessions</CardTitle>
+                <CardTitle className="text-green-800">Recent Sessions</CardTitle>
                 <CardDescription>Monitor platform activity and sessions</CardDescription>
               </CardHeader>
               <CardContent>
                 {recentSessions?.length ? (
                   <div className="space-y-4">
                     {recentSessions.map((session) => (
-                      <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div key={session.id} className="flex items-center justify-between p-4 border border-green-200 rounded-lg">
                         <div>
                           <p className="font-semibold">
                             {session.users?.name} → {session.student?.name}
@@ -319,7 +319,7 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <BarChart3 className="w-12 h-12 text-green-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No sessions yet</h3>
                     <p className="text-gray-600">Session activity will appear here</p>
                   </div>
@@ -329,14 +329,14 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            <Card>
+            <Card className="border-green-200">
               <CardHeader>
-                <CardTitle>Platform Analytics</CardTitle>
+                <CardTitle className="text-green-800">Platform Analytics</CardTitle>
                 <CardDescription>View detailed platform statistics and trends</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
-                  <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <BarChart3 className="w-12 h-12 text-green-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">Analytics Dashboard</h3>
                   <p className="text-gray-600">Detailed analytics and reporting features coming soon</p>
                 </div>

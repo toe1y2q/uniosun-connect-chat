@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,7 +108,7 @@ const AspirantDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-4">
       <div className="max-w-7xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -123,7 +122,7 @@ const AspirantDashboard = () => {
               </h1>
               <p className="text-gray-600">Aspirant Dashboard - Find Your Perfect Study Partner</p>
             </div>
-            <Badge className="bg-purple-100 text-purple-800">
+            <Badge className="bg-green-100 text-green-800">
               <GraduationCap className="w-4 h-4 mr-1" />
               Aspirant
             </Badge>
@@ -131,18 +130,18 @@ const AspirantDashboard = () => {
         </motion.div>
 
         <Tabs defaultValue="discover" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="discover">Discover Talents</TabsTrigger>
-            <TabsTrigger value="sessions">My Sessions</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
-            <TabsTrigger value="wallet">Wallet</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 bg-green-100">
+            <TabsTrigger value="discover" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Discover Talents</TabsTrigger>
+            <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">My Sessions</TabsTrigger>
+            <TabsTrigger value="messages" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Messages</TabsTrigger>
+            <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Wallet</TabsTrigger>
           </TabsList>
 
           <TabsContent value="discover" className="space-y-6">
             {/* Search and Filter */}
-            <Card>
+            <Card className="border-green-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-green-800">
                   <Search className="w-5 h-5" />
                   Find UNIOSUN Students
                 </CardTitle>
@@ -157,12 +156,12 @@ const AspirantDashboard = () => {
                       placeholder="Search by student name..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full"
+                      className="w-full border-green-200 focus:border-green-500 focus:ring-green-500"
                     />
                   </div>
                   <div className="w-64">
                     <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                      <SelectTrigger>
+                      <SelectTrigger className="border-green-200 focus:border-green-500">
                         <SelectValue placeholder="Filter by department" />
                       </SelectTrigger>
                       <SelectContent className="max-h-60">
@@ -183,11 +182,11 @@ const AspirantDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {loadingStudents ? (
                 [...Array(6)].map((_, i) => (
-                  <Card key={i} className="animate-pulse">
+                  <Card key={i} className="animate-pulse border-green-200">
                     <CardContent className="p-6">
-                      <div className="h-24 bg-gray-200 rounded mb-4"></div>
-                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                      <div className="h-24 bg-green-100 rounded mb-4"></div>
+                      <div className="h-4 bg-green-100 rounded mb-2"></div>
+                      <div className="h-4 bg-green-100 rounded w-2/3"></div>
                     </CardContent>
                   </Card>
                 ))
@@ -198,12 +197,12 @@ const AspirantDashboard = () => {
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Card className="hover:shadow-lg transition-shadow">
+                    <Card className="hover:shadow-lg transition-shadow border-green-200 hover:border-green-300">
                       <CardContent className="p-6">
                         <div className="flex items-center gap-4 mb-4">
-                          <Avatar className="h-16 w-16">
+                          <Avatar className="h-16 w-16 border-2 border-green-200">
                             <AvatarImage src={student.profile_image} />
-                            <AvatarFallback className="bg-indigo-100 text-indigo-600 text-lg font-semibold">
+                            <AvatarFallback className="bg-green-100 text-green-700 text-lg font-semibold">
                               {student.name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
@@ -238,16 +237,16 @@ const AspirantDashboard = () => {
                         <div className="space-y-2">
                           <Button 
                             onClick={() => handleBookSession(student.id, student.name)}
-                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
                           >
                             <Calendar className="w-4 h-4 mr-2" />
                             Book Session
                           </Button>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="flex-1">
+                            <Button variant="outline" size="sm" className="flex-1 border-green-200 text-green-700 hover:bg-green-50">
                               ₦1,000 • 30min
                             </Button>
-                            <Button variant="outline" size="sm" className="flex-1">
+                            <Button variant="outline" size="sm" className="flex-1 border-green-200 text-green-700 hover:bg-green-50">
                               ₦1,500 • 60min
                             </Button>
                           </div>
@@ -258,7 +257,7 @@ const AspirantDashboard = () => {
                 ))
               ) : (
                 <div className="col-span-full text-center py-12">
-                  <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <GraduationCap className="w-16 h-16 text-green-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-600 mb-2">No students found</h3>
                   <p className="text-gray-500">Try adjusting your search criteria</p>
                 </div>
@@ -267,7 +266,7 @@ const AspirantDashboard = () => {
           </TabsContent>
 
           <TabsContent value="sessions" className="space-y-6">
-            <Card>
+            <Card className="border-green-200">
               <CardHeader>
                 <CardTitle>My Booked Sessions</CardTitle>
                 <CardDescription>View and manage your study sessions</CardDescription>
@@ -276,11 +275,11 @@ const AspirantDashboard = () => {
                 {sessions?.length ? (
                   <div className="space-y-4">
                     {sessions.map((session) => (
-                      <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div key={session.id} className="flex items-center justify-between p-4 border border-green-200 rounded-lg">
                         <div className="flex items-center gap-4">
-                          <Avatar>
+                          <Avatar className="border-2 border-green-200">
                             <AvatarImage src={session.users?.profile_image} />
-                            <AvatarFallback>
+                            <AvatarFallback className="bg-green-100 text-green-700">
                               {session.users?.name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
@@ -306,7 +305,7 @@ const AspirantDashboard = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <Calendar className="w-12 h-12 text-green-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No sessions booked yet</h3>
                     <p className="text-gray-600">Start by finding and booking a session with a student</p>
                   </div>
@@ -316,7 +315,7 @@ const AspirantDashboard = () => {
           </TabsContent>
 
           <TabsContent value="messages" className="space-y-6">
-            <Card>
+            <Card className="border-green-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageSquare className="w-5 h-5" />
@@ -326,7 +325,7 @@ const AspirantDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
-                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <MessageSquare className="w-12 h-12 text-green-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No messages yet</h3>
                   <p className="text-gray-600">Messages will appear here after booking sessions</p>
                 </div>
@@ -335,7 +334,7 @@ const AspirantDashboard = () => {
           </TabsContent>
 
           <TabsContent value="wallet" className="space-y-6">
-            <Card>
+            <Card className="border-green-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Wallet className="w-5 h-5" />
@@ -345,23 +344,23 @@ const AspirantDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <Card>
+                  <Card className="border-green-200">
                     <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold text-gray-900">
+                      <div className="text-2xl font-bold text-green-600">
                         ₦{wallet?.balance ? (wallet.balance / 100).toLocaleString() : '0'}
                       </div>
                       <p className="text-sm text-gray-600">Current Balance</p>
                     </CardContent>
                   </Card>
-                  <Card>
+                  <Card className="border-green-200">
                     <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-2xl font-bold text-green-600">
                         {sessions?.length || 0}
                       </div>
                       <p className="text-sm text-gray-600">Total Sessions</p>
                     </CardContent>
                   </Card>
-                  <Card>
+                  <Card className="border-green-200">
                     <CardContent className="p-4 text-center">
                       <div className="text-2xl font-bold text-green-600">₦0</div>
                       <p className="text-sm text-gray-600">This Month</p>
@@ -370,7 +369,7 @@ const AspirantDashboard = () => {
                 </div>
 
                 <div className="text-center py-8">
-                  <Wallet className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <Wallet className="w-12 h-12 text-green-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No transactions yet</h3>
                   <p className="text-gray-600">Your payment history will appear here</p>
                 </div>
