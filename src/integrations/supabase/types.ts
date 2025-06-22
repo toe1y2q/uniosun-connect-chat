@@ -266,6 +266,7 @@ export type Database = {
           client_id: string
           created_at: string | null
           duration: number
+          flutterwave_reference: string | null
           id: string
           payment_status: string | null
           paystack_reference: string | null
@@ -279,6 +280,7 @@ export type Database = {
           client_id: string
           created_at?: string | null
           duration: number
+          flutterwave_reference?: string | null
           id?: string
           payment_status?: string | null
           paystack_reference?: string | null
@@ -292,6 +294,7 @@ export type Database = {
           client_id?: string
           created_at?: string | null
           duration?: number
+          flutterwave_reference?: string | null
           id?: string
           payment_status?: string | null
           paystack_reference?: string | null
@@ -370,10 +373,15 @@ export type Database = {
       }
       users: {
         Row: {
+          account_name: string | null
+          account_number: string | null
           badge: boolean | null
+          bank_code: string | null
+          bank_name: string | null
           created_at: string | null
           department_id: string | null
           email: string
+          flutterwave_subaccount_id: string | null
           id: string
           is_verified: boolean | null
           jamb_reg: string | null
@@ -383,12 +391,18 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
           status: Database["public"]["Enums"]["user_status"] | null
           updated_at: string | null
+          wallet_balance: number | null
         }
         Insert: {
+          account_name?: string | null
+          account_number?: string | null
           badge?: boolean | null
+          bank_code?: string | null
+          bank_name?: string | null
           created_at?: string | null
           department_id?: string | null
           email: string
+          flutterwave_subaccount_id?: string | null
           id?: string
           is_verified?: boolean | null
           jamb_reg?: string | null
@@ -398,12 +412,18 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           status?: Database["public"]["Enums"]["user_status"] | null
           updated_at?: string | null
+          wallet_balance?: number | null
         }
         Update: {
+          account_name?: string | null
+          account_number?: string | null
           badge?: boolean | null
+          bank_code?: string | null
+          bank_name?: string | null
           created_at?: string | null
           department_id?: string | null
           email?: string
+          flutterwave_subaccount_id?: string | null
           id?: string
           is_verified?: boolean | null
           jamb_reg?: string | null
@@ -413,6 +433,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           status?: Database["public"]["Enums"]["user_status"] | null
           updated_at?: string | null
+          wallet_balance?: number | null
         }
         Relationships: [
           {
@@ -451,6 +472,53 @@ export type Database = {
             foreignKeyName: "wallets_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawals: {
+        Row: {
+          account_name: string
+          account_number: string
+          amount: number
+          bank_code: string
+          created_at: string | null
+          flutterwave_reference: string | null
+          id: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          amount: number
+          bank_code: string
+          created_at?: string | null
+          flutterwave_reference?: string | null
+          id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          amount?: number
+          bank_code?: string
+          created_at?: string | null
+          flutterwave_reference?: string | null
+          id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },

@@ -1,204 +1,201 @@
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, CreditCard } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { initializeFlutterwavePayment, generateTxRef } from '@/utils/flutterwave';
 
-const BookingModal = ({ student, open, onClose }) => {
-  const [selectedDuration, setSelectedDuration] = useState(30);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
-  const { profile } = useAuth();
+interface BookingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  student: {
+    id: string;
+    name: string;
+    email: string;
+    flutterwave_subaccount_id?: string;
+  };
+}
 
-  const bookingOptions = [
-    { duration: 30, price: 1000, label: '30 Minutes' },
-    { duration: 60, price: 1500, label: '1 Hour' }
-  ];
-
-  const timeSlots = [
-    '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', 
-    '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
-  ];
+const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
+  const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
+  const [bookingData, setBookingData] = useState({
+    date: '',
+    time: '',
+    duration: '60',
+    amount: profile?.role === 'aspirant' ? 1000 : 1500
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const createSessionMutation = useMutation({
-    mutationFn: async () => {
-      const scheduledAt = new Date(`${selectedDate}T${selectedTime}:00`).toISOString();
-      const amount = selectedDuration === 30 ? 100000 : 150000; // in kobo
-      
+    mutationFn: async (sessionData: any) => {
       const { data, error } = await supabase
         .from('sessions')
-        .insert({
-          client_id: profile.id,
-          student_id: student.id,
-          scheduled_at: scheduledAt,
-          duration: selectedDuration,
-          amount,
-          status: 'pending'
-        })
+        .insert(sessionData)
         .select()
         .single();
-
+      
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      toast({
-        title: 'Session Booked!',
-        description: 'Your session has been booked. You will be charged when the student confirms.'
-      });
+      toast.success('Session booked successfully!');
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
       onClose();
     },
     onError: (error) => {
-      toast({
-        title: 'Booking Failed',
-        description: error.message,
-        variant: 'destructive'
-      });
+      console.error('Error creating session:', error);
+      toast.error('Failed to create session');
     }
   });
 
-  const handleBooking = () => {
-    if (!selectedDate || !selectedTime) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please select both date and time',
-        variant: 'destructive'
-      });
+  const handlePayment = async () => {
+    if (!user || !profile) {
+      toast.error('Please log in to book a session');
       return;
     }
-    
-    createSessionMutation.mutate();
-  };
 
-  const getMinDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
-  };
+    if (!bookingData.date || !bookingData.time) {
+      toast.error('Please select date and time');
+      return;
+    }
 
-  if (!student) return null;
+    setIsProcessing(true);
+
+    try {
+      const txRef = generateTxRef();
+      const scheduledAt = new Date(`${bookingData.date}T${bookingData.time}`).toISOString();
+      
+      const paymentData = {
+        amount: bookingData.amount,
+        email: user.email!,
+        name: profile.name,
+        tx_ref: txRef,
+        redirect_url: window.location.origin + '/dashboard',
+        subaccounts: student.flutterwave_subaccount_id ? [{
+          id: student.flutterwave_subaccount_id,
+          transaction_split_ratio: 70 // 70% to student
+        }] : undefined
+      };
+
+      const response = await initializeFlutterwavePayment(paymentData);
+      
+      if (response && (response as any).status === 'successful') {
+        // Create session record
+        const sessionData = {
+          client_id: user.id,
+          student_id: student.id,
+          scheduled_at: scheduledAt,
+          duration: parseInt(bookingData.duration),
+          amount: bookingData.amount * 100, // Convert to kobo
+          payment_status: 'completed',
+          status: 'confirmed',
+          flutterwave_reference: (response as any).transaction_id
+        };
+
+        createSessionMutation.mutate(sessionData);
+
+        // Create earning transaction for student
+        await supabase.from('transactions').insert({
+          user_id: student.id,
+          amount: Math.floor(bookingData.amount * 0.7 * 100), // 70% in kobo
+          type: 'earning',
+          status: 'completed',
+          reference: (response as any).transaction_id,
+          description: `Session earning from ${profile.name}`
+        });
+
+      } else {
+        toast.error('Payment was not successful');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Payment failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Book a Session with {student.name}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            Book Session with {student.name}
+          </DialogTitle>
           <DialogDescription>
-            {student.departments?.name} Student
+            Schedule a 1-on-1 learning session
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Duration Selection */}
-          <div>
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Select Duration
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              {bookingOptions.map((option) => (
-                <motion.div
-                  key={option.duration}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Card 
-                    className={`cursor-pointer transition-all ${
-                      selectedDuration === option.duration 
-                        ? 'ring-2 ring-indigo-500 bg-indigo-50' 
-                        : 'hover:shadow-md'
-                    }`}
-                    onClick={() => setSelectedDuration(option.duration)}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <div className="text-lg font-semibold">{option.label}</div>
-                      <div className="text-2xl font-bold text-indigo-600">
-                        ₦{option.price.toLocaleString()}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={bookingData.date}
+                onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div>
+              <Label htmlFor="time">Time</Label>
+              <Input
+                id="time"
+                type="time"
+                value={bookingData.time}
+                onChange={(e) => setBookingData({...bookingData, time: e.target.value})}
+              />
             </div>
           </div>
 
-          {/* Date Selection */}
           <div>
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Select Date
-            </h3>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              min={getMinDate()}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
+            <Label htmlFor="duration">Duration</Label>
+            <Select 
+              value={bookingData.duration} 
+              onValueChange={(value) => setBookingData({...bookingData, duration: value})}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30">30 minutes</SelectItem>
+                <SelectItem value="60">1 hour</SelectItem>
+                <SelectItem value="90">1.5 hours</SelectItem>
+                <SelectItem value="120">2 hours</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Time Selection */}
-          <div>
-            <h3 className="font-semibold mb-3">Select Time</h3>
-            <div className="grid grid-cols-4 gap-2">
-              {timeSlots.map((time) => (
-                <button
-                  key={time}
-                  onClick={() => setSelectedTime(time)}
-                  className={`p-2 text-sm rounded-lg border transition-all ${
-                    selectedTime === time
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'border-gray-300 hover:border-indigo-300'
-                  }`}
-                >
-                  {time}
-                </button>
-              ))}
+          <div className="p-4 bg-green-50 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-medium">Session Fee:</span>
+              <span className="text-lg font-bold">₦{bookingData.amount.toLocaleString()}</span>
+            </div>
+            <div className="text-sm text-gray-600 space-y-1">
+              <p>• Student receives: ₦{Math.floor(bookingData.amount * 0.7).toLocaleString()} (70%)</p>
+              <p>• Platform fee: ₦{Math.floor(bookingData.amount * 0.3).toLocaleString()} (30%)</p>
+              <p>• Duration: {bookingData.duration} minutes</p>
             </div>
           </div>
 
-          {/* Summary */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-semibold mb-2">Booking Summary</h4>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>Student:</span>
-                <span>{student.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Duration:</span>
-                <span>{selectedDuration} minutes</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Date & Time:</span>
-                <span>
-                  {selectedDate && selectedTime 
-                    ? `${selectedDate} at ${selectedTime}`
-                    : 'Not selected'
-                  }
-                </span>
-              </div>
-              <div className="flex justify-between font-semibold pt-2 border-t">
-                <span>Total:</span>
-                <span>₦{(selectedDuration === 30 ? 1000 : 1500).toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Book Button */}
           <Button 
-            onClick={handleBooking}
-            disabled={!selectedDate || !selectedTime || createSessionMutation.isPending}
-            className="w-full bg-indigo-600 hover:bg-indigo-700"
+            onClick={handlePayment}
+            disabled={isProcessing || !bookingData.date || !bookingData.time}
+            className="w-full bg-green-600 hover:bg-green-700"
           >
             <CreditCard className="w-4 h-4 mr-2" />
-            {createSessionMutation.isPending ? 'Booking...' : 'Book Session'}
+            {isProcessing ? 'Processing Payment...' : `Pay ₦${bookingData.amount.toLocaleString()}`}
           </Button>
         </div>
       </DialogContent>

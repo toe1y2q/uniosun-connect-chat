@@ -34,15 +34,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session
-    const getInitialSession = async () => {
+    const initializeAuth = async () => {
       try {
+        // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
           console.error('Error getting session:', error);
-          if (mounted) {
-            setLoading(false);
-          }
           return;
         }
 
@@ -50,19 +48,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(session?.user ?? null);
           if (session?.user) {
             await fetchProfile(session.user.id);
-          } else {
-            setLoading(false);
           }
         }
       } catch (error) {
-        console.error('Error in getInitialSession:', error);
+        console.error('Error in initializeAuth:', error);
+      } finally {
         if (mounted) {
           setLoading(false);
         }
       }
     };
 
-    getInitialSession();
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -71,11 +68,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (mounted) {
         setUser(session?.user ?? null);
         if (session?.user) {
+          setLoading(true);
           await fetchProfile(session.user.id);
         } else {
           setProfile(null);
-          setLoading(false);
         }
+        setLoading(false);
       }
     });
 
@@ -94,22 +92,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', userId)
         .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
-        // If no profile exists, create one with default values
-        if (error.code === 'PGRST116') {
-          console.log('No profile found, user might need to complete registration');
-        }
-      } else if (data) {
+        return;
+      }
+
+      if (data) {
         console.log('Profile fetched:', data);
         setProfile(data);
       } else {
-        console.log('No profile data returned');
+        console.log('No profile found for user');
+        setProfile(null);
       }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -125,8 +121,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       });
       return { data, error };
+    } catch (error) {
+      console.error('SignUp error:', error);
+      return { data: null, error };
     } finally {
-      // Don't set loading to false here, let the auth state change handle it
+      setLoading(false);
     }
   };
 
@@ -138,8 +137,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password
       });
       return { data, error };
+    } catch (error) {
+      console.error('SignIn error:', error);
+      return { data: null, error };
     } finally {
-      // Don't set loading to false here, let the auth state change handle it
+      setLoading(false);
     }
   };
 
@@ -147,22 +149,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     try {
       await supabase.auth.signOut();
+    } catch (error) {
+      console.error('SignOut error:', error);
     } finally {
-      // Don't set loading to false here, let the auth state change handle it
+      setLoading(false);
     }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return;
     
-    const { error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', user.id);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', user.id);
 
-    if (error) throw error;
-    
-    await fetchProfile(user.id);
+      if (error) throw error;
+      
+      await fetchProfile(user.id);
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
   };
 
   return (

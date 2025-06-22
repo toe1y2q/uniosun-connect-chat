@@ -1,329 +1,235 @@
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Star, Calendar, MessageSquare, GraduationCap, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { Search, Star, MapPin, BookOpen, Calendar, Award } from 'lucide-react';
+import BookingModal from '@/components/booking/BookingModal';
 
 interface TalentsPageProps {
-  onAuthRequired: () => void;
+  onAuthRequired?: () => void;
 }
 
-const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
-  const { user } = useAuth();
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+const TalentsPage = ({ onAuthRequired }: TalentsPageProps) => {
+  const { user, profile } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
-  // Fetch departments
-  const { data: departments, isLoading: loadingDepartments, error: departmentsError } = useQuery({
+  const { data: students, isLoading } = useQuery({
+    queryKey: ['verified-students'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select(`
+          *,
+          department:departments(name)
+        `)
+        .eq('role', 'student')
+        .eq('is_verified', true)
+        .eq('badge', true)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: departments } = useQuery({
     queryKey: ['departments'],
     queryFn: async () => {
-      console.log('Fetching departments...');
       const { data, error } = await supabase
         .from('departments')
         .select('*')
         .order('name');
       
-      if (error) {
-        console.error('Error fetching departments:', error);
-        throw error;
-      }
-      console.log('Departments fetched:', data);
+      if (error) throw error;
       return data;
     }
   });
 
-  // Fetch verified students (public access)
-  const { data: students, isLoading: loadingStudents, error: studentsError } = useQuery({
-    queryKey: ['public-verified-students', selectedDepartment, searchQuery],
-    queryFn: async () => {
-      console.log('Fetching verified students...');
-      let query = supabase
-        .from('users')
-        .select(`
-          *,
-          departments!users_department_id_fkey (name)
-        `)
-        .eq('role', 'student')
-        .eq('is_verified', true)
-        .eq('badge', true);
+  const filteredStudents = students?.filter(student => {
+    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         student.department?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDepartment = selectedDepartment === 'all' || student.department_id === selectedDepartment;
+    return matchesSearch && matchesDepartment;
+  }) || [];
 
-      if (selectedDepartment) {
-        query = query.eq('department_id', selectedDepartment);
-      }
-
-      if (searchQuery.trim()) {
-        query = query.ilike('name', `%${searchQuery.trim()}%`);
-      }
-
-      const { data, error } = await query.order('name');
-      
-      if (error) {
-        console.error('Error fetching students:', error);
-        throw error;
-      }
-      console.log('Students fetched:', data);
-      return data || [];
-    }
-  });
-
-  const handleBookingAttempt = () => {
+  const handleBookSession = (student: any) => {
     if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to book a session with a student.",
-        variant: "destructive"
-      });
-      onAuthRequired();
-    } else {
-      toast({
-        title: "Booking Feature",
-        description: "Booking functionality is coming soon!",
-      });
+      onAuthRequired?.();
+      return;
     }
+    
+    setSelectedStudent(student);
+    setShowBookingModal(true);
   };
 
-  const handleChatAttempt = () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to chat with students.",
-        variant: "destructive"
-      });
-      onAuthRequired();
-    } else {
-      toast({
-        title: "Chat Feature",
-        description: "Chat functionality is coming soon!",
-      });
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading talented tutors...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-              className="w-16 h-16 bg-gradient-to-r from-green-600 to-green-800 rounded-xl flex items-center justify-center"
-            >
-              <GraduationCap className="w-9 h-9 text-white" />
-            </motion.div>
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
-                UNIOSUN Talents
-              </h1>
-              <p className="text-gray-600 mt-2">Connect with Verified Students</p>
-            </div>
-          </div>
-          
-          {!user && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
-              <div className="flex items-center gap-3">
-                <LogIn className="w-5 h-5 text-green-600" />
-                <p className="text-green-800">
-                  <strong>Sign in required:</strong> You can browse talents, but need to sign in to book sessions or chat.
-                </p>
-              </div>
-            </div>
-          )}
-        </motion.div>
-
-        {/* Error handling */}
-        {(departmentsError || studentsError) && (
-          <Card className="mb-8 border-red-200 bg-red-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3 text-red-800">
-                <AlertCircle className="w-5 h-5" />
-                <p>There was an error loading the data. Please try refreshing the page.</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Search and Filter */}
-        <Card className="mb-8 border-green-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-800">
-              <Search className="w-5 h-5" />
-              Find Your Perfect Study Partner
-            </CardTitle>
-            <CardDescription>
-              Search for verified UNIOSUN students by department or name
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search by student name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full border-green-200 focus:border-green-500 focus:ring-green-500"
-                />
-              </div>
-              <div className="w-64">
-                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                  <SelectTrigger className="border-green-200 focus:border-green-500">
-                    <SelectValue placeholder="Filter by department" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    <SelectItem value="">All Departments</SelectItem>
-                    {departments?.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Students Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loadingStudents ? (
-            [...Array(6)].map((_, i) => (
-              <Card key={i} className="animate-pulse border-green-200">
-                <CardContent className="p-6">
-                  <div className="h-24 bg-green-100 rounded mb-4"></div>
-                  <div className="h-4 bg-green-100 rounded mb-2"></div>
-                  <div className="h-4 bg-green-100 rounded w-2/3"></div>
-                </CardContent>
-              </Card>
-            ))
-          ) : students && students.length > 0 ? (
-            students.map((student) => (
-              <motion.div
-                key={student.id}
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Card className="hover:shadow-lg transition-shadow border-green-200 hover:border-green-300">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4 mb-4">
-                      <Avatar className="h-16 w-16 border-2 border-green-200">
-                        <AvatarImage src={student.profile_image || undefined} />
-                        <AvatarFallback className="bg-green-100 text-green-700 text-lg font-semibold">
-                          {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-gray-900">{student.name}</h3>
-                        <p className="text-sm text-gray-600">{student.departments?.name || 'No Department'}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Badge className="bg-green-100 text-green-800 text-xs">
-                            <Star className="w-3 h-3 mr-1 fill-current" />
-                            Verified Talent
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Quiz Score:</span>
-                        <span className="font-semibold text-green-600">
-                          {student.quiz_score ? `${student.quiz_score}%` : 'N/A'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Rating:</span>
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span>4.8</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Button 
-                        onClick={handleBookingAttempt}
-                        className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
-                      >
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Book Session
-                      </Button>
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={handleChatAttempt}
-                          variant="outline" 
-                          className="flex-1 border-green-200 text-green-700 hover:bg-green-50"
-                        >
-                          <MessageSquare className="w-4 h-4 mr-1" />
-                          Chat
-                        </Button>
-                        <Button variant="outline" size="sm" className="border-green-200 text-green-700">
-                          ₦1,000 • 30min
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-12">
-              <GraduationCap className="w-16 h-16 text-green-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">No talents found</h3>
-              <p className="text-gray-500">
-                {searchQuery || selectedDepartment 
-                  ? 'Try adjusting your search criteria' 
-                  : 'No verified students are available at the moment'
-                }
-              </p>
-            </div>
-          )}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Discover Talented <span className="text-green-600">Tutors</span>
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Connect with verified UNIOSUN students who have proven their expertise through our rigorous quiz system. 
+            Book personalized 1-on-1 sessions to excel in your studies.
+          </p>
         </div>
 
-        {/* Stats Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6"
-        >
-          <Card className="text-center border-green-200">
-            <CardContent className="p-6">
-              <div className="text-3xl font-bold text-green-600 mb-2">
-                {students?.length || 0}
+        {/* Search and Filters */}
+        <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search by name or department..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-              <p className="text-gray-600">Verified Talents</p>
-            </CardContent>
-          </Card>
-          <Card className="text-center border-green-200">
-            <CardContent className="p-6">
-              <div className="text-3xl font-bold text-green-600 mb-2">
-                {departments?.length || 0}
-              </div>
-              <p className="text-gray-600">Departments</p>
-            </CardContent>
-          </Card>
-          <Card className="text-center border-green-200">
-            <CardContent className="p-6">
-              <div className="text-3xl font-bold text-green-600 mb-2">
-                4.8
-              </div>
-              <p className="text-gray-600">Average Rating</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+            </div>
+            <div className="md:w-64">
+              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments?.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="mb-6">
+          <p className="text-gray-600">
+            Found {filteredStudents.length} verified tutor{filteredStudents.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+
+        {/* Tutors Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredStudents.map((student) => (
+            <Card key={student.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-700 font-semibold text-lg">
+                        {student.name.split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{student.name}</CardTitle>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className="bg-green-100 text-green-800">
+                          <Award className="w-3 h-3 mr-1" />
+                          Verified
+                        </Badge>
+                        {student.quiz_score && (
+                          <Badge variant="outline">
+                            <Star className="w-3 h-3 mr-1" />
+                            {student.quiz_score}%
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <BookOpen className="w-4 h-4" />
+                  <span className="text-sm">{student.department?.name || 'Department not specified'}</span>
+                </div>
+                
+                <div className="flex items-center gap-2 text-gray-600">
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-sm">UNIOSUN Student</span>
+                </div>
+
+                <CardDescription className="text-sm">
+                  Experienced tutor specializing in {student.department?.name || 'various subjects'}. 
+                  Passed our comprehensive knowledge assessment with {student.quiz_score || 'excellent'} score.
+                </CardDescription>
+
+                <div className="pt-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Session Rate</span>
+                    <span className="font-semibold text-green-600">
+                      ₦{profile?.role === 'aspirant' ? '1,000' : '1,500'}/hour
+                    </span>
+                  </div>
+                  
+                  <Button 
+                    onClick={() => handleBookSession(student)}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Book Session
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredStudents.length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No tutors found</h3>
+            <p className="text-gray-600 max-w-md mx-auto">
+              {searchTerm || selectedDepartment !== 'all' ? 
+                'Try adjusting your search criteria to find more tutors.' :
+                'No verified tutors are available at the moment. Check back later!'
+              }
+            </p>
+          </div>
+        )}
+
+        {/* Booking Modal */}
+        {selectedStudent && (
+          <BookingModal
+            isOpen={showBookingModal}
+            onClose={() => {
+              setShowBookingModal(false);
+              setSelectedStudent(null);
+            }}
+            student={selectedStudent}
+          />
+        )}
       </div>
     </div>
   );
