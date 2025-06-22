@@ -14,6 +14,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  clearCache: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,16 +32,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const clearCache = () => {
+    console.log('Clearing auth cache...');
+    setUser(null);
+    setProfile(null);
+    setLoading(false);
+    localStorage.removeItem('supabase.auth.token');
+  };
+
   useEffect(() => {
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
-        // Get initial session
+        console.log('Initializing auth...');
+        
+        // Clear any stale auth state first
+        await supabase.auth.signOut();
+        
+        // Get fresh session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Error getting session:', error);
+          if (mounted) {
+            setUser(null);
+            setProfile(null);
+          }
           return;
         }
 
@@ -48,10 +66,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(session?.user ?? null);
           if (session?.user) {
             await fetchProfile(session.user.id);
+          } else {
+            setProfile(null);
           }
         }
       } catch (error) {
         console.error('Error in initializeAuth:', error);
+        if (mounted) {
+          setUser(null);
+          setProfile(null);
+        }
       } finally {
         if (mounted) {
           setLoading(false);
@@ -67,7 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (mounted) {
         setUser(session?.user ?? null);
-        if (session?.user) {
+        if (session?.user && event !== 'SIGNED_OUT') {
           setLoading(true);
           await fetchProfile(session.user.id);
         } else {
@@ -112,16 +136,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (email: string, password: string, userData: any) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // First create the auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: userData,
           emailRedirectTo: `${window.location.origin}/`
         }
       });
-      return { data, error };
-    } catch (error) {
+
+      if (authError) throw authError;
+
+      // If auth user was created, create the profile
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            email,
+            name: userData.name,
+            role: userData.role,
+            jamb_reg: userData.jamb_reg || null,
+            department_id: userData.department_id || null,
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          throw new Error('Failed to create user profile');
+        }
+      }
+
+      return { data: authData, error: null };
+    } catch (error: any) {
       console.error('SignUp error:', error);
       return { data: null, error };
     } finally {
@@ -149,6 +195,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     try {
       await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
     } catch (error) {
       console.error('SignOut error:', error);
     } finally {
@@ -182,7 +230,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signUp,
       signIn,
       signOut,
-      updateProfile
+      updateProfile,
+      clearCache
     }}>
       {children}
     </AuthContext.Provider>

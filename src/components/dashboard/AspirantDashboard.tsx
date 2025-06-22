@@ -8,7 +8,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { GraduationCap, BookOpen, MessageSquare, Star, Users, Calendar, Search, ArrowRight } from 'lucide-react';
+import { 
+  GraduationCap, 
+  BookOpen, 
+  MessageSquare, 
+  Star, 
+  Users, 
+  Calendar, 
+  Search, 
+  ArrowRight,
+  TrendingUp,
+  Clock,
+  Award,
+  MapPin,
+  DollarSign
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AspirantDashboard = () => {
@@ -28,7 +42,7 @@ const AspirantDashboard = () => {
         .eq('role', 'student')
         .eq('is_verified', true)
         .eq('badge', true)
-        .limit(6);
+        .limit(8);
       
       if (error) throw error;
       return data;
@@ -45,17 +59,42 @@ const AspirantDashboard = () => {
         .from('sessions')
         .select(`
           *,
-          student:users!sessions_student_id_fkey (name)
+          student:users!sessions_student_id_fkey (name, departments!users_department_id_fkey (name))
         `)
         .eq('client_id', profile.id)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
       
       if (error) throw error;
       return data;
     },
     enabled: !!profile?.id
   });
+
+  // Fetch popular departments
+  const { data: departments } = useQuery({
+    queryKey: ['popular-departments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('departments')
+        .select(`
+          *,
+          users!users_department_id_fkey(id)
+        `)
+        .limit(6);
+      
+      if (error) throw error;
+      return data?.map(dept => ({
+        ...dept,
+        studentCount: dept.users?.length || 0
+      }));
+    }
+  });
+
+  const totalSessions = sessions?.length || 0;
+  const completedSessions = sessions?.filter(s => s.status === 'completed').length || 0;
+  const upcomingSessions = sessions?.filter(s => s.status === 'confirmed').length || 0;
+  const totalSpent = sessions?.reduce((sum, session) => sum + (session.amount || 0), 0) || 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-4">
@@ -101,24 +140,23 @@ const AspirantDashboard = () => {
         </motion.div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-green-100">
+          <TabsList className="grid w-full grid-cols-5 bg-green-100">
             <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Overview</TabsTrigger>
             <TabsTrigger value="talents" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Find Talents</TabsTrigger>
             <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">My Sessions</TabsTrigger>
+            <TabsTrigger value="departments" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Departments</TabsTrigger>
             <TabsTrigger value="resources" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Resources</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <Card className="border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
                   <Calendar className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    {sessions?.length || 0}
-                  </div>
+                  <div className="text-2xl font-bold text-green-600">{totalSessions}</div>
                   <p className="text-xs text-muted-foreground">
                     Booked this month
                   </p>
@@ -127,28 +165,39 @@ const AspirantDashboard = () => {
 
               <Card className="border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Chats</CardTitle>
-                  <MessageSquare className="h-4 w-4 text-green-600" />
+                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                  <Award className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">0</div>
+                  <div className="text-2xl font-bold text-green-600">{completedSessions}</div>
                   <p className="text-xs text-muted-foreground">
-                    Ongoing conversations
+                    Finished sessions
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Available Talents</CardTitle>
-                  <Star className="h-4 w-4 text-green-600" />
+                  <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
+                  <Clock className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    {talents?.length || 0}
-                  </div>
+                  <div className="text-2xl font-bold text-green-600">{upcomingSessions}</div>
                   <p className="text-xs text-muted-foreground">
-                    Verified students
+                    Scheduled sessions
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-green-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">₦{totalSpent}</div>
+                  <p className="text-xs text-muted-foreground">
+                    On tutoring
                   </p>
                 </CardContent>
               </Card>
@@ -167,8 +216,8 @@ const AspirantDashboard = () => {
               </CardHeader>
               <CardContent>
                 {talents && talents.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {talents.map((talent) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {talents.slice(0, 4).map((talent) => (
                       <Card key={talent.id} className="border-green-200 hover:border-green-300 transition-colors">
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3 mb-3">
@@ -203,6 +252,62 @@ const AspirantDashboard = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Recent Sessions */}
+            <Card className="border-green-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-800">
+                  <Calendar className="w-5 h-5" />
+                  Recent Sessions
+                </CardTitle>
+                <CardDescription>
+                  Your latest tutoring sessions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {sessions && sessions.length > 0 ? (
+                  <div className="space-y-4">
+                    {sessions.slice(0, 5).map((session) => (
+                      <div key={session.id} className="flex items-center justify-between p-4 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <GraduationCap className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{session.student?.name}</h4>
+                            <p className="text-sm text-gray-600">
+                              {session.student?.departments?.name} • {new Date(session.scheduled_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-semibold text-green-600">₦{session.amount}</span>
+                          <Badge className={
+                            session.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            session.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }>
+                            {session.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Calendar className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No sessions yet</h3>
+                    <p className="text-gray-600 mb-6">Book your first session with a verified student</p>
+                    <Button 
+                      onClick={() => navigate('/talents')}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      Find a Tutor
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="talents">
@@ -216,17 +321,66 @@ const AspirantDashboard = () => {
                   Find the perfect student to help with your studies
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-center py-12">
-                <GraduationCap className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Discover UNIOSUN Talents</h3>
-                <p className="text-gray-600 mb-6">Browse verified students by department and expertise</p>
-                <Button 
-                  onClick={() => navigate('/talents')}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Search className="w-4 h-4 mr-2" />
-                  Browse Talents
-                </Button>
+              <CardContent>
+                {talents && talents.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {talents.map((talent) => (
+                      <Card key={talent.id} className="border-green-200 hover:border-green-300 transition-colors hover:shadow-md">
+                        <CardContent className="p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                              <span className="text-green-700 font-semibold">
+                                {talent.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold">{talent.name}</h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <MapPin className="w-3 h-3 text-gray-400" />
+                                <span className="text-sm text-gray-600">{talent.departments?.name}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-1">
+                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                              <span className="text-sm font-medium">4.8</span>
+                              <span className="text-xs text-gray-500">(12 reviews)</span>
+                            </div>
+                            <Badge className="bg-green-100 text-green-800">
+                              {talent.quiz_score ? `${talent.quiz_score}%` : 'Verified'}
+                            </Badge>
+                          </div>
+                          
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-green-600 mb-2">₦1,000/hour</div>
+                            <Button 
+                              onClick={() => navigate('/talents')}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white"
+                              size="sm"
+                            >
+                              Book Session
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <GraduationCap className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Discover UNIOSUN Talents</h3>
+                    <p className="text-gray-600 mb-6">Browse verified students by department and expertise</p>
+                    <Button 
+                      onClick={() => navigate('/talents')}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Search className="w-4 h-4 mr-2" />
+                      Browse Talents
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -247,25 +401,40 @@ const AspirantDashboard = () => {
                   <div className="space-y-4">
                     {sessions.map((session) => (
                       <div key={session.id} className="flex items-center justify-between p-4 border border-green-200 rounded-lg">
-                        <div>
-                          <h4 className="font-semibold">{session.student?.name}</h4>
-                          <p className="text-sm text-gray-600">
-                            {new Date(session.scheduled_at).toLocaleDateString()} • {session.duration} minutes
-                          </p>
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                            <GraduationCap className="w-6 h-6 text-green-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{session.student?.name}</h4>
+                            <p className="text-sm text-gray-600">
+                              {session.student?.departments?.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(session.scheduled_at).toLocaleDateString()} • {session.duration} minutes
+                            </p>
+                          </div>
                         </div>
-                        <Badge className={
-                          session.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                          session.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }>
-                          {session.status}
-                        </Badge>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="font-semibold text-green-600">₦{session.amount}</div>
+                            <div className="text-xs text-gray-500">{session.duration} mins</div>
+                          </div>
+                          <Badge className={
+                            session.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            session.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                            session.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }>
+                            {session.status}
+                          </Badge>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Calendar className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                  <div className="text-center py-12">
+                    <Calendar className="w-16 h-16 text-green-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No sessions yet</h3>
                     <p className="text-gray-600 mb-6">Book your first session with a verified student</p>
                     <Button 
@@ -274,6 +443,52 @@ const AspirantDashboard = () => {
                     >
                       Find a Tutor
                     </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="departments">
+            <Card className="border-green-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-800">
+                  <BookOpen className="w-5 h-5" />
+                  Popular Departments
+                </CardTitle>
+                <CardDescription>
+                  Explore departments with available tutors
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {departments && departments.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {departments.map((dept) => (
+                      <Card key={dept.id} className="border-green-200 hover:border-green-300 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <BookOpen className="w-8 h-8 text-green-600" />
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-sm">{dept.name}</h4>
+                              <p className="text-xs text-gray-600">{dept.studentCount} verified tutors</p>
+                            </div>
+                          </div>
+                          <Button 
+                            onClick={() => navigate('/talents')}
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full border-green-200 text-green-700 hover:bg-green-50"
+                          >
+                            Browse Tutors
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <BookOpen className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading departments...</p>
                   </div>
                 )}
               </CardContent>
@@ -312,6 +527,32 @@ const AspirantDashboard = () => {
                       <h3 className="font-semibold mb-2">Study Groups</h3>
                       <p className="text-sm text-gray-600 mb-4">
                         Join study groups with other aspirants and get group tutoring sessions.
+                      </p>
+                      <Button variant="outline" className="border-green-200 text-green-700 hover:bg-green-50">
+                        Coming Soon
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-green-200">
+                    <CardContent className="p-6">
+                      <MessageSquare className="w-8 h-8 text-green-600 mb-4" />
+                      <h3 className="font-semibold mb-2">Past Questions</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Practice with past UNIOSUN entrance examination questions and answers.
+                      </p>
+                      <Button variant="outline" className="border-green-200 text-green-700 hover:bg-green-50">
+                        Coming Soon
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-green-200">
+                    <CardContent className="p-6">
+                      <TrendingUp className="w-8 h-8 text-green-600 mb-4" />
+                      <h3 className="font-semibold mb-2">Progress Tracking</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Monitor your learning progress and track your improvement over time.
                       </p>
                       <Button variant="outline" className="border-green-200 text-green-700 hover:bg-green-50">
                         Coming Soon
