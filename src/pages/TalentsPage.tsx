@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Star, Calendar, MessageSquare, GraduationCap, LogIn } from 'lucide-react';
+import { Search, Star, Calendar, MessageSquare, GraduationCap, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
@@ -23,23 +23,29 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch departments
-  const { data: departments } = useQuery({
+  const { data: departments, isLoading: loadingDepartments, error: departmentsError } = useQuery({
     queryKey: ['departments'],
     queryFn: async () => {
+      console.log('Fetching departments...');
       const { data, error } = await supabase
         .from('departments')
         .select('*')
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching departments:', error);
+        throw error;
+      }
+      console.log('Departments fetched:', data);
       return data;
     }
   });
 
   // Fetch verified students (public access)
-  const { data: students, isLoading: loadingStudents } = useQuery({
+  const { data: students, isLoading: loadingStudents, error: studentsError } = useQuery({
     queryKey: ['public-verified-students', selectedDepartment, searchQuery],
     queryFn: async () => {
+      console.log('Fetching verified students...');
       let query = supabase
         .from('users')
         .select(`
@@ -54,14 +60,18 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
         query = query.eq('department_id', selectedDepartment);
       }
 
-      if (searchQuery) {
-        query = query.ilike('name', `%${searchQuery}%`);
+      if (searchQuery.trim()) {
+        query = query.ilike('name', `%${searchQuery.trim()}%`);
       }
 
       const { data, error } = await query.order('name');
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching students:', error);
+        throw error;
+      }
+      console.log('Students fetched:', data);
+      return data || [];
     }
   });
 
@@ -134,6 +144,18 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
           )}
         </motion.div>
 
+        {/* Error handling */}
+        {(departmentsError || studentsError) && (
+          <Card className="mb-8 border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 text-red-800">
+                <AlertCircle className="w-5 h-5" />
+                <p>There was an error loading the data. Please try refreshing the page.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Search and Filter */}
         <Card className="mb-8 border-green-200">
           <CardHeader>
@@ -186,7 +208,7 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
                 </CardContent>
               </Card>
             ))
-          ) : students?.length ? (
+          ) : students && students.length > 0 ? (
             students.map((student) => (
               <motion.div
                 key={student.id}
@@ -197,14 +219,14 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4 mb-4">
                       <Avatar className="h-16 w-16 border-2 border-green-200">
-                        <AvatarImage src={student.profile_image} />
+                        <AvatarImage src={student.profile_image || undefined} />
                         <AvatarFallback className="bg-green-100 text-green-700 text-lg font-semibold">
-                          {student.name.split(' ').map(n => n[0]).join('')}
+                          {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg text-gray-900">{student.name}</h3>
-                        <p className="text-sm text-gray-600">{student.departments?.name}</p>
+                        <p className="text-sm text-gray-600">{student.departments?.name || 'No Department'}</p>
                         <div className="flex items-center gap-1 mt-1">
                           <Badge className="bg-green-100 text-green-800 text-xs">
                             <Star className="w-3 h-3 mr-1 fill-current" />
@@ -218,7 +240,7 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Quiz Score:</span>
                         <span className="font-semibold text-green-600">
-                          {student.quiz_score || 'N/A'}%
+                          {student.quiz_score ? `${student.quiz_score}%` : 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
@@ -260,7 +282,12 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
             <div className="col-span-full text-center py-12">
               <GraduationCap className="w-16 h-16 text-green-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-600 mb-2">No talents found</h3>
-              <p className="text-gray-500">Try adjusting your search criteria</p>
+              <p className="text-gray-500">
+                {searchQuery || selectedDepartment 
+                  ? 'Try adjusting your search criteria' 
+                  : 'No verified students are available at the moment'
+                }
+              </p>
             </div>
           )}
         </div>

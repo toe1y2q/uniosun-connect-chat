@@ -22,6 +22,8 @@ const AppContent = () => {
   const { user, profile, loading } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
 
+  console.log('App state:', { user: !!user, profile, loading });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
@@ -60,12 +62,23 @@ const AppContent = () => {
       } />
       
       <Route path="/dashboard" element={
-        user && profile ? (
+        user ? (
           <div className="min-h-screen bg-gray-50">
             <Navigation />
-            {profile.role === 'admin' && <AdminDashboard />}
-            {profile.role === 'student' && <StudentDashboard />}
-            {profile.role === 'aspirant' && <AspirantDashboard />}
+            {!profile ? (
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-green-600 border-t-transparent mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading your profile...</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {profile.role === 'admin' && <AdminDashboard />}
+                {profile.role === 'student' && <StudentDashboard />}
+                {profile.role === 'aspirant' && <AspirantDashboard />}
+              </>
+            )}
           </div>
         ) : (
           <Navigate to="/auth" replace />
