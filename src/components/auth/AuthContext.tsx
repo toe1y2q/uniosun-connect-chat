@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -62,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } finally {
         if (mounted) {
-          setLoading(false); // ✅ Always resolve loading
+          setLoading(false);
         }
       }
     };
@@ -78,7 +77,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentUser);
         
         if (currentUser && event !== 'SIGNED_OUT') {
-          // Don't set loading to true here to avoid infinite loading
           await fetchProfile(currentUser.id);
         } else {
           setProfile(null);
@@ -118,13 +116,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('Profile fetched:', data);
         setProfile(data);
       } else {
-        console.log('No profile found for user');
-        setProfile(null);
+        console.log('No profile found for user, checking if admin user exists in auth');
+        // For admin users who might exist in auth but not in users table
+        // Check if this is the admin email and create profile if needed
+        const currentUser = await supabase.auth.getUser();
+        if (currentUser.data.user?.email === 'tolu8610@gmail.com') {
+          console.log('Admin user detected, creating admin profile');
+          await createAdminProfile(userId, currentUser.data.user.email);
+        } else {
+          setProfile(null);
+        }
       }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
-      // Don't block the app if profile fetch fails
       setProfile(null);
+    }
+  };
+
+  const createAdminProfile = async (userId: string, email: string) => {
+    try {
+      const adminProfile = {
+        id: userId,
+        email: email,
+        name: 'Admin User',
+        role: 'admin' as const,
+        is_verified: true,
+        badge: false,
+        wallet_balance: 0,
+      };
+
+      const { data, error } = await supabase
+        .from('users')
+        .insert(adminProfile)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating admin profile:', error);
+        return;
+      }
+
+      console.log('Admin profile created:', data);
+      setProfile(data);
+    } catch (error) {
+      console.error('Error in createAdminProfile:', error);
     }
   };
 
