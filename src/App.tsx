@@ -14,44 +14,24 @@ import HomePage from "@/pages/HomePage";
 import TalentsPage from "@/pages/TalentsPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { useState, useEffect } from "react";
+import LoadingSpinner from "@/components/ui/loading-spinner";
+import { useState } from "react";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { user, profile, loading, clearCache } = useAuth();
+  const { user, profile, loading } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
 
   console.log('App state:', { user: !!user, profile, loading });
 
-  // Clear cache on app start to prevent stuck loading states
-  useEffect(() => {
-    const handleClearCache = () => {
-      if (loading) {
-        console.log('Clearing stuck loading state...');
-        clearCache();
-      }
-    };
-
-    // Clear cache after 10 seconds if still loading
-    const timeout = setTimeout(handleClearCache, 10000);
-    
-    return () => clearTimeout(timeout);
-  }, [loading, clearCache]);
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading UNIOSUN Connect...</p>
-          <button 
-            onClick={clearCache}
-            className="mt-4 px-4 py-2 text-sm text-green-600 hover:text-green-700 underline"
-          >
-            Click here if loading takes too long
-          </button>
-        </div>
+        <LoadingSpinner 
+          message="Connecting to UNIOSUN Connect..." 
+          size="lg"
+        />
       </div>
     );
   }
@@ -88,10 +68,7 @@ const AppContent = () => {
             <Navigation />
             {!profile ? (
               <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-green-600 border-t-transparent mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading your profile...</p>
-                </div>
+                <LoadingSpinner message="Loading your profile..." />
               </div>
             ) : (
               <>

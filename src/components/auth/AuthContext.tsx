@@ -14,7 +14,6 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
-  clearCache: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,14 +31,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const clearCache = () => {
-    console.log('Clearing auth cache...');
-    setUser(null);
-    setProfile(null);
-    setLoading(false);
-    localStorage.removeItem('supabase.auth.token');
-  };
-
   useEffect(() => {
     let mounted = true;
 
@@ -47,10 +38,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         console.log('Initializing auth...');
         
-        // Clear any stale auth state first
-        await supabase.auth.signOut();
-        
-        // Get fresh session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -136,34 +123,51 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (email: string, password: string, userData: any) => {
     setLoading(true);
     try {
+      console.log('Starting signup process for:', email, 'as role:', userData.role);
+      
       // First create the auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth signup error:', authError);
+        throw authError;
+      }
+
+      console.log('Auth user created:', authData.user?.id);
 
       // If auth user was created, create the profile
       if (authData.user) {
-        const { error: profileError } = await supabase
+        console.log('Creating user profile...');
+        const profileData = {
+          id: authData.user.id,
+          email,
+          name: userData.name,
+          role: userData.role,
+          jamb_reg: userData.jamb_reg || null,
+          department_id: userData.department_id || null,
+          is_verified: false,
+          badge: false,
+          wallet_balance: 0,
+        };
+
+        console.log('Profile data to insert:', profileData);
+
+        const { data: profileResult, error: profileError } = await supabase
           .from('users')
-          .insert({
-            id: authData.user.id,
-            email,
-            name: userData.name,
-            role: userData.role,
-            jamb_reg: userData.jamb_reg || null,
-            department_id: userData.department_id || null,
-          });
+          .insert(profileData)
+          .select()
+          .single();
 
         if (profileError) {
           console.error('Profile creation error:', profileError);
-          throw new Error('Failed to create user profile');
+          throw new Error(`Failed to create user profile: ${profileError.message}`);
         }
+
+        console.log('Profile created successfully:', profileResult);
+        setProfile(profileResult);
       }
 
       return { data: authData, error: null };
@@ -178,10 +182,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
+      console.log('Attempting sign in for:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
+      
+      if (error) {
+        console.error('Sign in error:', error);
+      } else {
+        console.log('Sign in successful');
+      }
+      
       return { data, error };
     } catch (error) {
       console.error('SignIn error:', error);
@@ -231,7 +243,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signIn,
       signOut,
       updateProfile,
-      clearCache
     }}>
       {children}
     </AuthContext.Provider>
