@@ -42,17 +42,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (error) {
           console.error('Error getting session:', error);
-          if (mounted) {
-            setUser(null);
-            setProfile(null);
-          }
-          return;
         }
 
         if (mounted) {
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            await fetchProfile(session.user.id);
+          const currentUser = session?.user ?? null;
+          setUser(currentUser);
+          
+          if (currentUser) {
+            await fetchProfile(currentUser.id);
           } else {
             setProfile(null);
           }
@@ -65,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } finally {
         if (mounted) {
-          setLoading(false);
+          setLoading(false); // ✅ Always resolve loading
         }
       }
     };
@@ -77,14 +74,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Auth state changed:', event, session?.user?.email);
       
       if (mounted) {
-        setUser(session?.user ?? null);
-        if (session?.user && event !== 'SIGNED_OUT') {
-          setLoading(true);
-          await fetchProfile(session.user.id);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        
+        if (currentUser && event !== 'SIGNED_OUT') {
+          // Don't set loading to true here to avoid infinite loading
+          await fetchProfile(currentUser.id);
         } else {
           setProfile(null);
         }
-        setLoading(false);
       }
     });
 
@@ -97,11 +95,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchProfile = async (userId: string) => {
     try {
       console.log('Fetching profile for user:', userId);
-      const { data, error } = await supabase
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+      );
+      
+      const fetchPromise = supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
@@ -117,11 +123,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
+      // Don't block the app if profile fetch fails
+      setProfile(null);
     }
   };
 
   const signUp = async (email: string, password: string, userData: any) => {
-    setLoading(true);
     try {
       console.log('Starting signup process for:', email, 'as role:', userData.role);
       
@@ -129,6 +136,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
       });
 
       if (authError) {
@@ -174,13 +184,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error: any) {
       console.error('SignUp error:', error);
       return { data: null, error };
-    } finally {
-      setLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    setLoading(true);
     try {
       console.log('Attempting sign in for:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -198,21 +205,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error('SignIn error:', error);
       return { data: null, error };
-    } finally {
-      setLoading(false);
     }
   };
 
   const signOut = async () => {
-    setLoading(true);
     try {
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
     } catch (error) {
       console.error('SignOut error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

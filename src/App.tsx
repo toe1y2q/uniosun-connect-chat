@@ -12,10 +12,9 @@ import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import Navigation from "@/components/Navigation";
 import HomePage from "@/pages/HomePage";
 import TalentsPage from "@/pages/TalentsPage";
-import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +23,17 @@ const AppContent = () => {
   const [showAuth, setShowAuth] = useState(false);
 
   console.log('App state:', { user: !!user, profile, loading });
+
+  // Add timeout fallback for loading state
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Loading timeout reached, app may be stuck');
+      }
+    }, 15000); // 15 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
   if (loading) {
     return (
@@ -68,7 +78,11 @@ const AppContent = () => {
             <Navigation />
             {!profile ? (
               <div className="min-h-screen flex items-center justify-center">
-                <LoadingSpinner message="Loading your profile..." />
+                <div className="text-center p-8">
+                  <h2 className="text-xl font-semibold mb-4">Setting up your profile...</h2>
+                  <p className="text-gray-600 mb-4">This may take a moment for new accounts.</p>
+                  <LoadingSpinner message="Loading your profile..." />
+                </div>
               </div>
             ) : (
               <>
