@@ -12,6 +12,7 @@ import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import Navigation from "@/components/Navigation";
 import HomePage from "@/pages/HomePage";
 import TalentsPage from "@/pages/TalentsPage";
+import ProfileSettingsPage from "@/pages/ProfileSettingsPage";
 import NotFound from "./pages/NotFound";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useState, useEffect } from "react";
@@ -69,6 +70,17 @@ const AppContent = () => {
           <Navigate to="/dashboard" replace />
         ) : (
           <AuthForm />
+        )
+      } />
+
+      <Route path="/profile-settings" element={
+        user ? (
+          <div className="min-h-screen bg-gray-50">
+            <Navigation />
+            <ProfileSettingsPage />
+          </div>
+        ) : (
+          <Navigate to="/auth" replace />
         )
       } />
       

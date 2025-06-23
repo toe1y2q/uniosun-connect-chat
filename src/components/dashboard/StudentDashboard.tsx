@@ -20,11 +20,15 @@ import {
   Award,
   TrendingUp,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Settings,
+  User
 } from 'lucide-react';
 import WalletSection from '@/components/wallet/WalletSection';
 import QuizSection from '@/components/quiz/QuizSection';
 import SessionsSection from '@/components/sessions/SessionsSection';
+import ProfileSettings from '@/components/profile/ProfileSettings';
+import AvatarUpload from '@/components/profile/AvatarUpload';
 
 const StudentDashboard = () => {
   const { profile } = useAuth();
@@ -82,11 +86,14 @@ const StudentDashboard = () => {
           className="mb-8"
         >
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Welcome back, {profile?.name}!
-              </h1>
-              <p className="text-gray-600">UNIOSUN Student Dashboard</p>
+            <div className="flex items-center gap-4">
+              <AvatarUpload size="md" showUploadButton={false} />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Welcome back, {profile?.name}!
+                </h1>
+                <p className="text-gray-600">UNIOSUN Student Dashboard</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Badge className="bg-green-100 text-green-800">
@@ -162,12 +169,13 @@ const StudentDashboard = () => {
         </motion.div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-green-100">
+          <TabsList className="grid w-full grid-cols-6 bg-green-100">
             <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Overview</TabsTrigger>
             <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Sessions</TabsTrigger>
             <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Wallet</TabsTrigger>
             <TabsTrigger value="quiz" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Quiz</TabsTrigger>
             <TabsTrigger value="profile" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Profile</TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -301,6 +309,13 @@ const StudentDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex items-center gap-6 mb-6">
+                  <AvatarUpload size="lg" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">{profile?.name}</h3>
+                    <p className="text-gray-600">{profile?.email}</p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-700">Full Name</label>
@@ -321,6 +336,10 @@ const StudentDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <ProfileSettings />
           </TabsContent>
         </Tabs>
       </div>

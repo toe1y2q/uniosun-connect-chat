@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,9 +20,13 @@ import {
   Clock,
   Award,
   MapPin,
-  DollarSign
+  DollarSign,
+  Settings,
+  User
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ProfileSettings from '@/components/profile/ProfileSettings';
+import AvatarUpload from '@/components/profile/AvatarUpload';
 
 const AspirantDashboard = () => {
   const { profile } = useAuth();
@@ -105,11 +108,14 @@ const AspirantDashboard = () => {
           className="mb-8"
         >
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Welcome, {profile?.name}!
-              </h1>
-              <p className="text-gray-600">UNIOSUN Aspirant Dashboard</p>
+            <div className="flex items-center gap-4">
+              <AvatarUpload size="md" showUploadButton={false} />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Welcome, {profile?.name}!
+                </h1>
+                <p className="text-gray-600">UNIOSUN Aspirant Dashboard</p>
+              </div>
             </div>
             <Badge className="bg-blue-100 text-blue-800">
               <Users className="w-4 h-4 mr-1" />
@@ -140,12 +146,13 @@ const AspirantDashboard = () => {
         </motion.div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-green-100">
+          <TabsList className="grid w-full grid-cols-6 bg-green-100">
             <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Overview</TabsTrigger>
             <TabsTrigger value="talents" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Find Talents</TabsTrigger>
             <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">My Sessions</TabsTrigger>
             <TabsTrigger value="departments" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Departments</TabsTrigger>
             <TabsTrigger value="resources" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Resources</TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -562,6 +569,10 @@ const AspirantDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <ProfileSettings />
           </TabsContent>
         </Tabs>
       </div>
