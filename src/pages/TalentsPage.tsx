@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthContext';
-import { Search, Star, MapPin, BookOpen, Calendar, Award } from 'lucide-react';
+import { Search, Star, MapPin, BookOpen, Calendar, Award, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import BookingModal from '@/components/booking/BookingModal';
 
 interface TalentsPageProps {
@@ -17,6 +18,7 @@ interface TalentsPageProps {
 
 const TalentsPage = ({ onAuthRequired }: TalentsPageProps) => {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
@@ -85,6 +87,18 @@ const TalentsPage = ({ onAuthRequired }: TalentsPageProps) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
+        {/* Go Back Button */}
+        <div className="mb-6">
+          <Button
+            onClick={() => navigate('/')}
+            variant="outline"
+            className="flex items-center gap-2 hover:bg-green-50 border-green-200"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Go Back
+          </Button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">

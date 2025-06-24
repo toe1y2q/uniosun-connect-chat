@@ -33,22 +33,41 @@ const AvatarUpload = ({ size = 'md', showUploadButton = true }: AvatarUploadProp
       // Create a unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
       
-      // For now, we'll just store a placeholder URL
-      // In a real implementation, you would upload to Supabase Storage
-      const avatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${profile.name}`;
+      // Upload the file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Get the public URL for the uploaded file
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
       
-      await updateProfile({ profile_image: avatarUrl });
+      // Update the user's profile with the new avatar URL
+      await updateProfile({ profile_image: publicUrl });
       
       toast({
         title: "Avatar updated successfully!",
         description: "Your profile picture has been updated."
       });
+      
+      // Force a page refresh to show the new avatar immediately
+      window.location.reload();
     } catch (error) {
       console.error('Error uploading avatar:', error);
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your avatar.",
+        description: "There was an error uploading your avatar. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -93,7 +112,7 @@ const AvatarUpload = ({ size = 'md', showUploadButton = true }: AvatarUploadProp
       
       {showUploadButton && size === 'lg' && (
         <div>
-          <label htmlFor="avatar-upload">
+          <label htmlFor="avatar-upload-button">
             <Button 
               variant="outline" 
               size="sm" 
@@ -106,6 +125,14 @@ const AvatarUpload = ({ size = 'md', showUploadButton = true }: AvatarUploadProp
                 {uploading ? 'Uploading...' : 'Change Avatar'}
               </span>
             </Button>
+            <input
+              id="avatar-upload-button"
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+              disabled={uploading}
+            />
           </label>
         </div>
       )}

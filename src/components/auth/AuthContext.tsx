@@ -90,6 +90,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
+  const createAdminProfile = async (userId: string, email: string) => {
+    try {
+      const adminProfile = {
+        id: userId,
+        email: email,
+        name: 'Admin User',
+        role: 'admin' as const,
+        is_verified: true,
+        badge: false,
+        wallet_balance: 0,
+      };
+
+      const { data, error } = await supabase
+        .from('users')
+        .insert(adminProfile)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating admin profile:', error);
+        return;
+      }
+
+      console.log('Admin profile created:', data);
+      setProfile(data);
+    } catch (error) {
+      console.error('Error in createAdminProfile:', error);
+    }
+  };
+
   const fetchProfile = async (userId: string) => {
     try {
       console.log('Fetching profile for user:', userId);
@@ -118,10 +148,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         console.log('No profile found for user, checking if admin user exists in auth');
         // For admin users who might exist in auth but not in users table
-        // Check if this is the admin email and create profile if needed
+        // Check if this is an admin email and create profile if needed
         const currentUser = await supabase.auth.getUser();
-        if (currentUser.data.user?.email === 'tolu8610@gmail.com') {
-          console.log('Admin user detected, creating admin profile');
+        const adminEmails = ['tolu8610@gmail.com', 'pithyentertainment@gmail.com'];
+        
+        if (currentUser.data.user?.email && adminEmails.includes(currentUser.data.user.email)) {
+          console.log('Admin user detected, creating admin profile for:', currentUser.data.user.email);
           await createAdminProfile(userId, currentUser.data.user.email);
         } else {
           setProfile(null);
@@ -130,36 +162,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error('Error in fetchProfile:', error);
       setProfile(null);
-    }
-  };
-
-  const createAdminProfile = async (userId: string, email: string) => {
-    try {
-      const adminProfile = {
-        id: userId,
-        email: email,
-        name: 'Admin User',
-        role: 'admin' as const,
-        is_verified: true,
-        badge: false,
-        wallet_balance: 0,
-      };
-
-      const { data, error } = await supabase
-        .from('users')
-        .insert(adminProfile)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating admin profile:', error);
-        return;
-      }
-
-      console.log('Admin profile created:', data);
-      setProfile(data);
-    } catch (error) {
-      console.error('Error in createAdminProfile:', error);
     }
   };
 
