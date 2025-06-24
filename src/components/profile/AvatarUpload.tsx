@@ -30,17 +30,19 @@ const AvatarUpload = ({ size = 'md', showUploadButton = true }: AvatarUploadProp
     setUploading(true);
     
     try {
-      // Create a unique filename
+      // Create a unique filename with user ID in the path
       const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${profile.id}/${fileName}`;
+      
+      console.log('Uploading file to path:', filePath);
       
       // Upload the file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true
         });
 
       if (uploadError) {
@@ -48,10 +50,14 @@ const AvatarUpload = ({ size = 'md', showUploadButton = true }: AvatarUploadProp
         throw uploadError;
       }
 
+      console.log('File uploaded successfully:', uploadData);
+
       // Get the public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
+      
+      console.log('Public URL:', publicUrl);
       
       // Update the user's profile with the new avatar URL
       await updateProfile({ profile_image: publicUrl });
@@ -60,14 +66,11 @@ const AvatarUpload = ({ size = 'md', showUploadButton = true }: AvatarUploadProp
         title: "Avatar updated successfully!",
         description: "Your profile picture has been updated."
       });
-      
-      // Force a page refresh to show the new avatar immediately
-      window.location.reload();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading avatar:', error);
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your avatar. Please try again.",
+        description: error.message || "There was an error uploading your avatar. Please try again.",
         variant: "destructive"
       });
     } finally {
