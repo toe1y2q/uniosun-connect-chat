@@ -22,11 +22,13 @@ import {
   MapPin,
   DollarSign,
   Settings,
-  User
+  User,
+  Wallet
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ProfileSettings from '@/components/profile/ProfileSettings';
 import AvatarUpload from '@/components/profile/AvatarUpload';
+import AspirantWallet from '@/components/wallet/AspirantWallet';
 
 const AspirantDashboard = () => {
   const { profile } = useAuth();
@@ -146,8 +148,12 @@ const AspirantDashboard = () => {
         </motion.div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-green-100">
+          <TabsList className="grid w-full grid-cols-7 bg-green-100">
             <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Overview</TabsTrigger>
+            <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
+              <Wallet className="w-4 h-4 mr-1" />
+              Wallet
+            </TabsTrigger>
             <TabsTrigger value="talents" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Find Talents</TabsTrigger>
             <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">My Sessions</TabsTrigger>
             <TabsTrigger value="departments" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Departments</TabsTrigger>
@@ -315,6 +321,10 @@ const AspirantDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="wallet">
+            <AspirantWallet />
           </TabsContent>
 
           <TabsContent value="talents">

@@ -9,8 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, GraduationCap, CheckCircle, XCircle, Eye, Shield, BarChart3, Clock } from 'lucide-react';
+import { Users, GraduationCap, CheckCircle, XCircle, Eye, Shield, BarChart3, Clock, Flag } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import AdminModerationPanel from './AdminModerationPanel';
 
 const AdminDashboard = () => {
   const { profile } = useAuth();
@@ -188,8 +189,12 @@ const AdminDashboard = () => {
         </motion.div>
 
         <Tabs defaultValue="verification" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-green-100">
+          <TabsList className="grid w-full grid-cols-5 bg-green-100">
             <TabsTrigger value="verification" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Student Verification</TabsTrigger>
+            <TabsTrigger value="moderation" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
+              <Flag className="w-4 h-4 mr-1" />
+              Moderation
+            </TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">User Management</TabsTrigger>
             <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Session Monitoring</TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Analytics</TabsTrigger>
@@ -270,6 +275,10 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="moderation">
+            <AdminModerationPanel />
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
