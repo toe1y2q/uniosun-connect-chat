@@ -5,10 +5,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/auth/AuthContext';
 import { LogOut, User, Award, Home, Eye, Shield } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const Navigation = () => {
   const { profile, signOut } = useAuth();
+  const location = useLocation();
 
   return (
     <div className="bg-white border-b border-green-200 px-4 py-3 shadow-sm">
@@ -35,7 +36,14 @@ const Navigation = () => {
             </Link>
             {profile?.role === 'admin' && (
               <Link to="/admin">
-                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                <Button 
+                  variant={location.pathname === '/admin' ? 'default' : 'ghost'} 
+                  size="sm" 
+                  className={location.pathname === '/admin' 
+                    ? "bg-red-600 hover:bg-red-700 text-white" 
+                    : "text-red-600 hover:text-red-700 hover:bg-red-50"
+                  }
+                >
                   <Shield className="w-4 h-4 mr-2" />
                   Admin Panel
                 </Button>

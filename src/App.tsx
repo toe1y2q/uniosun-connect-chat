@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from "@/components/auth/AuthContext";
 import AuthForm from "@/components/auth/AuthForm";
 import StudentDashboard from "@/components/dashboard/StudentDashboard";
 import AspirantDashboard from "@/components/dashboard/AspirantDashboard";
-import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import Navigation from "@/components/Navigation";
 import HomePage from "@/pages/HomePage";
 import TalentsPage from "@/pages/TalentsPage";
@@ -74,6 +73,7 @@ const AppContent = () => {
         )
       } />
 
+      {/* Standalone Admin Route */}
       <Route path="/admin" element={<AdminPage />} />
 
       <Route path="/profile-settings" element={
@@ -101,9 +101,23 @@ const AppContent = () => {
               </div>
             ) : (
               <>
-                {profile.role === 'admin' && <AdminDashboard />}
                 {profile.role === 'student' && <StudentDashboard />}
                 {profile.role === 'aspirant' && <AspirantDashboard />}
+                {profile.role === 'admin' && (
+                  <div className="container mx-auto px-4 py-8">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                      <h2 className="text-xl font-semibold text-blue-800 mb-2">Admin Access Available</h2>
+                      <p className="text-blue-700 mb-4">You have administrator privileges. Access the admin panel for advanced features.</p>
+                      <button 
+                        onClick={() => window.location.href = '/admin'}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
+                      >
+                        Go to Admin Panel
+                      </button>
+                    </div>
+                    <AspirantDashboard />
+                  </div>
+                )}
               </>
             )}
           </div>
