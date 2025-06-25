@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +22,9 @@ import {
   Users,
   Star,
   Clock,
-  Search
+  Search,
+  UserCheck,
+  UserX
 } from 'lucide-react';
 
 const AdminModerationPanel = () => {
@@ -58,7 +59,7 @@ const AdminModerationPanel = () => {
     }
   });
 
-  // Fetch users for moderation
+  // Fetch users for moderation with enhanced filtering
   const { data: users, refetch: refetchUsers } = useQuery({
     queryKey: ['all-users', searchTerm],
     queryFn: async () => {
@@ -180,7 +181,7 @@ const AdminModerationPanel = () => {
           </TabsTrigger>
           <TabsTrigger value="users" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
             <Users className="w-4 h-4 mr-2" />
-            User Moderation
+            User Management
           </TabsTrigger>
           <TabsTrigger value="performance" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
             <Star className="w-4 h-4 mr-2" />
@@ -281,14 +282,14 @@ const AdminModerationPanel = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-red-800">
                 <Shield className="w-5 h-5" />
-                User Moderation
+                User Management & Blocking
               </CardTitle>
               <CardDescription>
-                Manage user accounts and access controls
+                Search, block, and manage user accounts across the platform
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="mb-4">
+              <div className="mb-6">
                 <div className="flex items-center gap-2">
                   <Search className="w-4 h-4 text-gray-400" />
                   <Input
@@ -302,8 +303,13 @@ const AdminModerationPanel = () => {
 
               {users && users.length > 0 ? (
                 <div className="space-y-4">
-                  {users.slice(0, 10).map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  {users.slice(0, 15).map((user) => (
+                    <motion.div
+                      key={user.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    >
                       <div className="flex items-center gap-4">
                         <Avatar className="h-12 w-12 border-2 border-gray-200">
                           <AvatarImage src={user.profile_image} />
@@ -327,9 +333,19 @@ const AdminModerationPanel = () => {
                               user.status === 'blocked' ? 'destructive' :
                               'secondary'
                             }>
-                              {user.status}
+                              {user.status || 'active'}
                             </Badge>
+                            {user.is_verified && (
+                              <Badge variant="outline" className="text-xs">
+                                Verified
+                              </Badge>
+                            )}
                           </div>
+                          {user.departments && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Dept: {user.departments.name}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -339,7 +355,7 @@ const AdminModerationPanel = () => {
                             size="sm"
                             className="bg-green-600 hover:bg-green-700"
                           >
-                            <CheckCircle className="w-4 h-4 mr-1" />
+                            <UserCheck className="w-4 h-4 mr-1" />
                             Unblock
                           </Button>
                         ) : (
@@ -348,15 +364,15 @@ const AdminModerationPanel = () => {
                             variant="destructive"
                             size="sm"
                           >
-                            <Ban className="w-4 h-4 mr-1" />
-                            Block
+                            <UserX className="w-4 h-4 mr-1" />
+                            Block User
                           </Button>
                         )}
                         <Button variant="ghost" size="sm" className="text-blue-600">
                           <Eye className="w-4 h-4" />
                         </Button>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               ) : (
@@ -439,17 +455,28 @@ const AdminModerationPanel = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-red-800">
                 <MessageSquare className="w-5 h-5" />
-                Student Appeals
+                Student Appeals & Complaints
               </CardTitle>
               <CardDescription>
-                Review and respond to user appeals and complaints
+                Review and respond to user appeals, complaints, and support requests
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No appeals pending</h3>
-                <p className="text-gray-600">Student appeals and complaints will appear here</p>
+              <div className="text-center py-12">
+                <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2 text-gray-700">Appeals System</h3>
+                <p className="text-gray-600 mb-4">
+                  No appeals or complaints have been submitted yet.
+                </p>
+                <div className="bg-blue-50 p-4 rounded-lg text-left max-w-md mx-auto">
+                  <h4 className="font-semibold text-blue-800 mb-2">How Appeals Work:</h4>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• Users can submit appeals through their dashboard</li>
+                    <li>• Appeals appear here for admin review</li>
+                    <li>• Admins can respond and update appeal status</li>
+                    <li>• Users are notified of admin responses</li>
+                  </ul>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/auth/AuthContext';
-import { LogOut, User, Award, Home, Eye } from 'lucide-react';
+import { LogOut, User, Award, Home, Eye, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Navigation = () => {
@@ -33,6 +33,14 @@ const Navigation = () => {
                 Browse Talents
               </Button>
             </Link>
+            {profile?.role === 'admin' && (
+              <Link to="/admin">
+                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                  <Shield className="w-4 h-4 mr-2" />
+                  Admin Panel
+                </Button>
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -50,7 +58,11 @@ const Navigation = () => {
               <div className="flex items-center gap-2">
                 <Badge 
                   variant="outline" 
-                  className="text-xs border-green-200 text-green-700"
+                  className={`text-xs ${
+                    profile?.role === 'admin' 
+                      ? 'border-red-200 text-red-700' 
+                      : 'border-green-200 text-green-700'
+                  }`}
                 >
                   {profile?.role}
                 </Badge>

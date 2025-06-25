@@ -13,6 +13,7 @@ import Navigation from "@/components/Navigation";
 import HomePage from "@/pages/HomePage";
 import TalentsPage from "@/pages/TalentsPage";
 import ProfileSettingsPage from "@/pages/ProfileSettingsPage";
+import AdminPage from "@/pages/AdminPage";
 import NotFound from "./pages/NotFound";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useState, useEffect } from "react";
@@ -72,6 +73,8 @@ const AppContent = () => {
           <AuthForm />
         )
       } />
+
+      <Route path="/admin" element={<AdminPage />} />
 
       <Route path="/profile-settings" element={
         user ? (
