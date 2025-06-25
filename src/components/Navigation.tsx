@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/auth/AuthContext';
-import { LogOut, User, Award, Home, Eye } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { LogOut, User, Award, Home, Eye, Shield } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Navigation = () => {
   const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="bg-white border-b border-green-200 px-4 py-3 shadow-sm">
@@ -33,6 +34,17 @@ const Navigation = () => {
                 Browse Talents
               </Button>
             </Link>
+            {profile?.role === 'admin' && (
+              <Button 
+                onClick={() => navigate('/admin')}
+                variant="ghost" 
+                size="sm" 
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Admin Panel
+              </Button>
+            )}
           </nav>
         </div>
 
@@ -58,6 +70,12 @@ const Navigation = () => {
                   <Badge className="bg-green-100 text-green-800 text-xs">
                     <Award className="w-3 h-3 mr-1" />
                     Verified
+                  </Badge>
+                )}
+                {profile?.role === 'admin' && (
+                  <Badge className="bg-red-100 text-red-800 text-xs">
+                    <Shield className="w-3 h-3 mr-1" />
+                    Admin
                   </Badge>
                 )}
               </div>
