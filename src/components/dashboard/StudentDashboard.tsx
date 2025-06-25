@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,19 +22,16 @@ import {
   Clock,
   CheckCircle,
   Settings,
-  User,
-  Shield
+  User
 } from 'lucide-react';
 import WalletSection from '@/components/wallet/WalletSection';
 import QuizSection from '@/components/quiz/QuizSection';
 import SessionsSection from '@/components/sessions/SessionsSection';
 import ProfileSettings from '@/components/profile/ProfileSettings';
 import AvatarUpload from '@/components/profile/AvatarUpload';
-import { useNavigate } from 'react-router-dom';
 
 const StudentDashboard = () => {
   const { profile } = useAuth();
-  const navigate = useNavigate();
 
   // Fetch student's sessions
   const { data: sessions } = useQuery({
@@ -114,42 +112,8 @@ const StudentDashboard = () => {
                   Certified Tutor
                 </Badge>
               )}
-              {profile?.role === 'admin' && (
-                <Button 
-                  onClick={() => navigate('/admin')}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  size="sm"
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Proceed as Admin
-                </Button>
-              )}
             </div>
           </div>
-
-          {/* Admin Notice Card */}
-          {profile?.role === 'admin' && (
-            <Card className="mb-6 border-red-200 bg-gradient-to-r from-red-50 to-red-100">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-red-600 text-white">
-                    <Shield className="w-6 h-6" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-red-800">Admin Access Available</h3>
-                    <p className="text-red-700">You have administrator privileges. Access the admin panel to manage the platform.</p>
-                  </div>
-                  <Button 
-                    onClick={() => navigate('/admin')}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    <Shield className="w-4 h-4 mr-2" />
-                    Go to Admin Panel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Status Card */}
           {!profile?.is_verified ? (

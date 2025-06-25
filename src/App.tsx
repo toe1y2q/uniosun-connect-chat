@@ -83,18 +83,6 @@ const AppContent = () => {
           <Navigate to="/auth" replace />
         )
       } />
-
-      {/* Admin Routes */}
-      <Route path="/admin" element={
-        user && profile?.role === 'admin' ? (
-          <div className="min-h-screen bg-gray-50">
-            <Navigation />
-            <AdminDashboard />
-          </div>
-        ) : (
-          <Navigate to="/dashboard" replace />
-        )
-      } />
       
       <Route path="/dashboard" element={
         user ? (
