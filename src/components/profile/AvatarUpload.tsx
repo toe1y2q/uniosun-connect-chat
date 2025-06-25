@@ -7,7 +7,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
-const AvatarUpload = () => {
+interface AvatarUploadProps {
+  size?: 'sm' | 'md' | 'lg';
+  showUploadButton?: boolean;
+}
+
+const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'lg', showUploadButton = true }) => {
   const { user, profile, updateProfile } = useAuth();
   const [uploading, setUploading] = useState(false);
 
@@ -25,25 +30,17 @@ const AvatarUpload = () => {
 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
+      const fileName = `avatar_${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
       console.log('Uploading avatar to path:', filePath);
-
-      // Delete existing avatar if it exists
-      const { error: deleteError } = await supabase.storage
-        .from('avatars')
-        .remove([filePath]);
-
-      if (deleteError) {
-        console.log('No existing avatar to delete or error deleting:', deleteError.message);
-      }
 
       // Upload new avatar
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true
+          upsert: false
         });
 
       if (uploadError) {
@@ -80,10 +77,34 @@ const AvatarUpload = () => {
     }
   };
 
+  const getSizeClasses = () => {
+    switch (size) {
+      case 'sm':
+        return 'w-12 h-12';
+      case 'md':
+        return 'w-16 h-16';
+      case 'lg':
+      default:
+        return 'w-24 h-24';
+    }
+  };
+
+  const getCameraIconSize = () => {
+    switch (size) {
+      case 'sm':
+        return 'w-3 h-3';
+      case 'md':
+        return 'w-3 h-3';
+      case 'lg':
+      default:
+        return 'w-4 h-4';
+    }
+  };
+
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="relative">
-        <Avatar className="w-24 h-24 border-4 border-green-200">
+        <Avatar className={`${getSizeClasses()} border-4 border-green-200`}>
           <AvatarImage 
             src={profile?.profile_image} 
             alt={profile?.name || 'User avatar'}
@@ -93,13 +114,15 @@ const AvatarUpload = () => {
             {profile?.name?.split(' ').map(n => n[0]).join('') || 'U'}
           </AvatarFallback>
         </Avatar>
-        <div className="absolute -bottom-2 -right-2">
-          <label htmlFor="avatar-upload" className="cursor-pointer">
-            <div className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-lg transition-colors">
-              <Camera className="w-4 h-4" />
-            </div>
-          </label>
-        </div>
+        {showUploadButton && (
+          <div className="absolute -bottom-2 -right-2">
+            <label htmlFor="avatar-upload" className="cursor-pointer">
+              <div className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-lg transition-colors">
+                <Camera className={getCameraIconSize()} />
+              </div>
+            </label>
+          </div>
+        )}
       </div>
 
       <input
@@ -111,15 +134,17 @@ const AvatarUpload = () => {
         className="hidden"
       />
 
-      <Button
-        onClick={() => document.getElementById('avatar-upload')?.click()}
-        disabled={uploading}
-        variant="outline"
-        className="border-green-200 text-green-600 hover:bg-green-50"
-      >
-        <Upload className="w-4 h-4 mr-2" />
-        {uploading ? 'Uploading...' : 'Change Avatar'}
-      </Button>
+      {showUploadButton && (
+        <Button
+          onClick={() => document.getElementById('avatar-upload')?.click()}
+          disabled={uploading}
+          variant="outline"
+          className="border-green-200 text-green-600 hover:bg-green-50"
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          {uploading ? 'Uploading...' : 'Change Avatar'}
+        </Button>
+      )}
     </div>
   );
 };

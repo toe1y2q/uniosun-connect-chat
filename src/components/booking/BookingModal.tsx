@@ -21,9 +21,10 @@ interface BookingModalProps {
     email: string;
     flutterwave_subaccount_id?: string;
   };
+  onAuthRequired?: () => void;
 }
 
-const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
+const BookingModal = ({ isOpen, onClose, student, onAuthRequired }: BookingModalProps) => {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const [bookingData, setBookingData] = useState({
@@ -58,7 +59,11 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
 
   const handlePayment = async () => {
     if (!user || !profile) {
-      toast.error('Please log in to book a session');
+      if (onAuthRequired) {
+        onAuthRequired();
+      } else {
+        toast.error('Please log in to book a session');
+      }
       return;
     }
 
