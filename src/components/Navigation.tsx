@@ -16,7 +16,7 @@ const Navigation = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4 md:gap-6">
           <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
+            <div className="text-xl md:text-2xl font-bold text-green-600">
               Hireveno
             </div>
           </Link>
@@ -36,7 +36,7 @@ const Navigation = () => {
             </Link>
             {profile?.role === 'student' && !profile?.badge && profile?.is_verified && (
               <Link to="/quiz">
-                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700 hover:bg-green-50">
                   <BookOpen className="w-4 h-4 mr-2" />
                   Take Quiz
                 </Button>
