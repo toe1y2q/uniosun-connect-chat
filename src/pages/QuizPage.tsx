@@ -49,6 +49,7 @@ const QuizPage = () => {
       
       if (error) throw error;
       
+      // Properly parse the options from JSON format
       return data.map(q => ({
         ...q,
         options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string)
@@ -214,12 +215,12 @@ const QuizPage = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto space-y-6">
+        <div className="px-4 py-6">
+          <div className="max-w-2xl mx-auto space-y-4">
             <Card className="animate-pulse">
-              <CardContent className="p-6 md:p-8">
-                <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <CardContent className="p-6">
+                <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
               </CardContent>
             </Card>
           </div>
@@ -231,16 +232,16 @@ const QuizPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      <div className="container mx-auto px-4 py-6 md:py-8">
-        <div className="max-w-4xl mx-auto">
+      <div className="px-4 py-6">
+        <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="mb-6">
             <Link to="/dashboard" className="inline-flex items-center text-green-600 hover:text-green-700 mb-4">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Link>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Department Quiz</h1>
-            <p className="text-gray-600">Complete the quiz to become a verified talent on Hireveno</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Department Quiz</h1>
+            <p className="text-sm text-gray-600">Complete the quiz to become a verified talent on Hireveno</p>
           </div>
 
           {/* Show results */}
@@ -251,30 +252,30 @@ const QuizPage = () => {
               className="space-y-6"
             >
               <Card className={`border-2 ${quizScore >= 70 ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
-                <CardContent className="p-6 md:p-8 text-center">
+                <CardContent className="p-6 text-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2, type: "spring" }}
                   >
                     {quizScore >= 70 ? (
-                      <Trophy className="w-12 h-12 md:w-16 md:h-16 text-green-600 mx-auto mb-4" />
+                      <Trophy className="w-12 h-12 text-green-600 mx-auto mb-4" />
                     ) : (
-                      <XCircle className="w-12 h-12 md:w-16 md:h-16 text-red-600 mx-auto mb-4" />
+                      <XCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
                     )}
                   </motion.div>
                   
-                  <h2 className="text-xl md:text-2xl font-bold mb-4">
+                  <h2 className="text-lg sm:text-xl font-bold mb-4">
                     {quizScore >= 70 ? '🎉 Congratulations!' : 'Quiz Completed'}
                   </h2>
                   
-                  <div className="text-4xl md:text-6xl font-bold mb-4">
+                  <div className="text-3xl sm:text-4xl font-bold mb-4">
                     <span className={quizScore >= 70 ? 'text-green-600' : 'text-red-600'}>
                       {quizScore}%
                     </span>
                   </div>
                   
-                  <p className="text-base md:text-lg text-gray-700 mb-6">
+                  <p className="text-sm text-gray-700 mb-6">
                     {quizScore >= 70 
                       ? "You've earned your badge and can now receive bookings on Hireveno!"
                       : "You need 70% to pass. You can retry in 24 hours."
@@ -282,15 +283,15 @@ const QuizPage = () => {
                   </p>
                   
                   {quizScore >= 70 && (
-                    <Badge className="bg-green-100 text-green-800 text-sm md:text-lg px-4 py-2">
-                      <Award className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                    <Badge className="bg-green-100 text-green-800 text-sm px-3 py-1 mb-4">
+                      <Award className="w-4 h-4 mr-2" />
                       Verified Talent
                     </Badge>
                   )}
 
                   <div className="mt-6">
                     <Link to="/dashboard">
-                      <Button className="w-full md:w-auto">
+                      <Button className="w-full">
                         Return to Dashboard
                       </Button>
                     </Link>
@@ -302,18 +303,18 @@ const QuizPage = () => {
 
           {/* Quiz interface */}
           {isQuizActive && questions && !showResults && (
-            <div className="space-y-4 md:space-y-6">
+            <div className="space-y-4">
               {/* Timer and Progress */}
               <Card>
-                <CardContent className="p-4 md:p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 space-y-2 md:space-y-0">
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                      <span className="font-semibold text-lg">
+                      <Clock className="w-4 h-4 text-green-600" />
+                      <span className="font-semibold text-sm">
                         Time: {formatTime(timeLeft)}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs text-gray-600">
                       Question {currentQuestionIndex + 1} of {questions.length}
                     </div>
                   </div>
@@ -331,12 +332,12 @@ const QuizPage = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg md:text-xl">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-base sm:text-lg leading-tight">
                         {questions[currentQuestionIndex].question}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 md:space-y-4">
+                    <CardContent className="space-y-3">
                       {questions[currentQuestionIndex].options.map((option, index) => (
                         <motion.div
                           key={index}
@@ -345,20 +346,20 @@ const QuizPage = () => {
                         >
                           <Button
                             variant={selectedAnswers[currentQuestionIndex] === index ? "default" : "outline"}
-                            className="w-full text-left justify-start p-3 md:p-4 h-auto whitespace-normal text-sm md:text-base"
+                            className="w-full text-left justify-start p-3 h-auto whitespace-normal text-sm"
                             onClick={() => handleAnswerSelect(index)}
                           >
                             <div className="flex items-start gap-3">
-                              <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
                                 selectedAnswers[currentQuestionIndex] === index 
-                                  ? 'bg-blue-600 border-blue-600' 
+                                  ? 'bg-green-600 border-green-600' 
                                   : 'border-gray-300'
                               }`}>
                                 {selectedAnswers[currentQuestionIndex] === index && (
-                                  <CheckCircle className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                                  <CheckCircle className="w-3 h-3 text-white" />
                                 )}
                               </div>
-                              <span className="text-sm md:text-base">{option}</span>
+                              <span className="text-sm leading-tight">{option}</span>
                             </div>
                           </Button>
                         </motion.div>
@@ -370,19 +371,20 @@ const QuizPage = () => {
 
               {/* Navigation */}
               <Card>
-                <CardContent className="p-4 md:p-6">
-                  <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
                     <Button
                       variant="outline"
                       onClick={handlePreviousQuestion}
                       disabled={currentQuestionIndex === 0}
-                      className="w-full md:w-auto"
+                      className="w-full sm:w-auto text-sm"
+                      size="sm"
                     >
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Previous
                     </Button>
                     
-                    <div className="text-sm text-gray-600 text-center">
+                    <div className="text-xs text-gray-600 text-center order-first sm:order-none">
                       {selectedAnswers.filter(a => a !== undefined).length} / {questions.length} answered
                     </div>
                     
@@ -390,7 +392,8 @@ const QuizPage = () => {
                       <Button
                         onClick={handleSubmitQuiz}
                         disabled={selectedAnswers.filter(a => a !== undefined).length !== questions.length}
-                        className="bg-green-600 hover:bg-green-700 w-full md:w-auto"
+                        className="bg-green-600 hover:bg-green-700 w-full sm:w-auto text-sm"
+                        size="sm"
                       >
                         Submit Quiz
                       </Button>
@@ -398,7 +401,8 @@ const QuizPage = () => {
                       <Button
                         onClick={handleNextQuestion}
                         disabled={selectedAnswers[currentQuestionIndex] === undefined}
-                        className="w-full md:w-auto"
+                        className="w-full sm:w-auto text-sm"
+                        size="sm"
                       >
                         Next
                         <ArrowRight className="w-4 h-4 ml-2" />
@@ -416,9 +420,9 @@ const QuizPage = () => {
               {needsVerification && (
                 <Card className="border-yellow-200 bg-yellow-50">
                   <CardContent className="p-6 text-center">
-                    <Clock className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Verification Pending</h3>
-                    <p className="text-gray-600">
+                    <Clock className="w-10 h-10 text-yellow-600 mx-auto mb-4" />
+                    <h3 className="text-base font-semibold mb-2">Verification Pending</h3>
+                    <p className="text-sm text-gray-600">
                       Your account is being verified by our admin team. You'll be able to take the quiz once verified.
                     </p>
                   </CardContent>
@@ -428,12 +432,12 @@ const QuizPage = () => {
               {hasPassedQuiz && (
                 <Card className="border-green-200 bg-green-50">
                   <CardContent className="p-6 text-center">
-                    <Trophy className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Quiz Completed!</h3>
-                    <p className="text-gray-600 mb-4">
+                    <Trophy className="w-10 h-10 text-green-600 mx-auto mb-4" />
+                    <h3 className="text-base font-semibold mb-2">Quiz Completed!</h3>
+                    <p className="text-sm text-gray-600 mb-4">
                       You've successfully passed the quiz with a score of {profile.quiz_score}%
                     </p>
-                    <Badge className="bg-green-100 text-green-800">
+                    <Badge className="bg-green-100 text-green-800 text-sm">
                       <Award className="w-4 h-4 mr-1" />
                       Verified Talent
                     </Badge>
@@ -444,34 +448,34 @@ const QuizPage = () => {
               {canTakeQuiz && !hasPassedQuiz && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="w-6 h-6" />
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <BookOpen className="w-5 h-5" />
                       Department Quiz
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-sm">
                       Take the quiz to become a verified talent and start receiving bookings on Hireveno
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">10</div>
-                        <div className="text-sm text-gray-600">Questions</div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-lg font-bold text-green-600">10</div>
+                        <div className="text-xs text-gray-600">Questions</div>
                       </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">10</div>
-                        <div className="text-sm text-gray-600">Minutes</div>
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="text-lg font-bold text-blue-600">10</div>
+                        <div className="text-xs text-gray-600">Minutes</div>
                       </div>
-                      <div className="text-center p-4 bg-orange-50 rounded-lg">
-                        <div className="text-2xl font-bold text-orange-600">70%</div>
-                        <div className="text-sm text-gray-600">Pass Score</div>
+                      <div className="text-center p-3 bg-orange-50 rounded-lg">
+                        <div className="text-lg font-bold text-orange-600">70%</div>
+                        <div className="text-xs text-gray-600">Pass Score</div>
                       </div>
                     </div>
 
                     {!canRetry && lastAttempt && (
                       <div className="text-center p-4 bg-red-50 rounded-lg">
-                        <RotateCcw className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                        <p className="text-sm text-red-600">
+                        <RotateCcw className="w-6 h-6 text-red-600 mx-auto mb-2" />
+                        <p className="text-xs text-red-600">
                           You can retry after: {new Date(lastAttempt.next_attempt_at!).toLocaleString()}
                         </p>
                       </div>
@@ -480,8 +484,7 @@ const QuizPage = () => {
                     <Button
                       onClick={startQuiz}
                       disabled={!canRetry || !questions?.length}
-                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                      size="lg"
+                      className="w-full bg-green-600 hover:bg-green-700 text-sm"
                     >
                       {!canRetry ? 'Quiz Attempt Pending' : 'Start Quiz'}
                     </Button>
