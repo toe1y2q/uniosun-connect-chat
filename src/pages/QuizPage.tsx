@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Clock, Trophy, CheckCircle, XCircle, RotateCcw, Award, ArrowLeft, ArrowRight } from 'lucide-react';
+import { BookOpen, Clock, Trophy, CheckCircle, XCircle, RotateCcw, Award, ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
@@ -36,7 +36,7 @@ const QuizPage = () => {
   const needsVerification = !profile?.is_verified;
 
   // Fetch quiz questions for user's department (limit to 10)
-  const { data: questions, isLoading: loadingQuestions } = useQuery({
+  const { data: questions, isLoading: loadingQuestions, error: questionsError } = useQuery({
     queryKey: ['quiz-questions', profile?.department_id],
     queryFn: async () => {
       if (!profile?.department_id) return [];
@@ -221,6 +221,42 @@ const QuizPage = () => {
               <CardContent className="p-6">
                 <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message when no questions are available
+  if (!loadingQuestions && (!questions || questions.length === 0)) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="px-4 py-6">
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-6">
+              <Link to="/dashboard" className="inline-flex items-center text-green-600 hover:text-green-700 mb-4">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Link>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Department Quiz</h1>
+              <p className="text-sm text-gray-600">Complete the quiz to become a verified talent on Hireveno</p>
+            </div>
+
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardContent className="p-6 text-center">
+                <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
+                <h2 className="text-lg font-bold mb-2">Quiz Questions Not Available</h2>
+                <p className="text-sm text-gray-700 mb-6">
+                  No quiz questions are currently available for your department. Please contact the admin team to add questions for your department.
+                </p>
+                <Link to="/dashboard">
+                  <Button className="bg-green-600 hover:bg-green-700">
+                    Return to Dashboard
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>

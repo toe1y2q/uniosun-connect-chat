@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,8 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, GraduationCap, CheckCircle, XCircle, Eye, Shield, BarChart3, Clock, Flag } from 'lucide-react';
+import { Users, GraduationCap, CheckCircle, XCircle, Eye, Shield, BarChart3, Clock, Flag, DollarSign, Settings } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 import AdminModerationPanel from './AdminModerationPanel';
 
 const AdminDashboard = () => {
@@ -128,12 +130,53 @@ const AdminDashboard = () => {
               <h1 className="text-3xl font-bold text-gray-900">
                 Admin Dashboard
               </h1>
-              <p className="text-gray-600">Manage UNIOSUN Connect Platform</p>
+              <p className="text-gray-600">Manage Hireveno Platform</p>
             </div>
-            <Badge className="bg-red-100 text-red-800">
-              <Shield className="w-4 h-4 mr-1" />
-              Administrator
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-red-100 text-red-800">
+                <Shield className="w-4 h-4 mr-1" />
+                Administrator
+              </Badge>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Link to="/admin/users">
+              <Card className="hover:shadow-md transition-shadow cursor-pointer border-green-200">
+                <CardContent className="p-4 text-center">
+                  <Users className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <h3 className="font-semibold text-sm">User Management</h3>
+                  <p className="text-xs text-gray-600">Manage all users</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/admin/withdrawals">
+              <Card className="hover:shadow-md transition-shadow cursor-pointer border-green-200">
+                <CardContent className="p-4 text-center">
+                  <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <h3 className="font-semibold text-sm">Withdrawals</h3>
+                  <p className="text-xs text-gray-600">Manage withdrawals</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Card className="hover:shadow-md transition-shadow cursor-pointer border-green-200">
+              <CardContent className="p-4 text-center">
+                <Flag className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-sm">Moderation</h3>
+                <p className="text-xs text-gray-600">Content moderation</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow cursor-pointer border-green-200">
+              <CardContent className="p-4 text-center">
+                <BarChart3 className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-sm">Analytics</h3>
+                <p className="text-xs text-gray-600">Platform analytics</p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Stats Overview */}
@@ -285,13 +328,18 @@ const AdminDashboard = () => {
             <Card className="border-green-200">
               <CardHeader>
                 <CardTitle className="text-green-800">User Management</CardTitle>
-                <CardDescription>Manage all platform users</CardDescription>
+                <CardDescription>Advanced user management features</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
                   <Users className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">User Management</h3>
-                  <p className="text-gray-600">Advanced user management features coming soon</p>
+                  <h3 className="text-lg font-semibold mb-2">Advanced User Management</h3>
+                  <p className="text-gray-600 mb-4">Manage all platform users with advanced controls</p>
+                  <Link to="/admin/users">
+                    <Button className="bg-green-600 hover:bg-green-700">
+                      Go to User Management
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
