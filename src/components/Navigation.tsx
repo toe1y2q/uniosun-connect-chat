@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/auth/AuthContext';
-import { LogOut, User, Award, Home, Eye, Shield } from 'lucide-react';
+import { LogOut, User, Award, Home, Eye, Shield, BookOpen } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navigation = () => {
@@ -14,10 +14,10 @@ const Navigation = () => {
   return (
     <div className="bg-white border-b border-green-200 px-4 py-3 shadow-sm">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-6">
           <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
-              UNIOSUN Connect
+            <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
+              Hireveno
             </div>
           </Link>
           
@@ -34,6 +34,14 @@ const Navigation = () => {
                 Browse Talents
               </Button>
             </Link>
+            {profile?.role === 'student' && !profile?.badge && profile?.is_verified && (
+              <Link to="/quiz">
+                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Take Quiz
+                </Button>
+              </Link>
+            )}
             {profile?.role === 'admin' && (
               <Link to="/admin">
                 <Button 
@@ -52,17 +60,17 @@ const Navigation = () => {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8 border-2 border-green-200">
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-3">
+            <Avatar className="h-7 w-7 md:h-8 md:w-8 border-2 border-green-200">
               <AvatarImage src={profile?.profile_image} />
-              <AvatarFallback className="bg-green-100 text-green-700">
+              <AvatarFallback className="bg-green-100 text-green-700 text-xs">
                 {profile?.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
             
-            <div className="text-sm">
-              <p className="font-medium text-gray-900">{profile?.name}</p>
+            <div className="text-sm hidden md:block">
+              <p className="font-medium text-gray-900 truncate max-w-[120px]">{profile?.name}</p>
               <div className="flex items-center gap-2">
                 <Badge 
                   variant="outline" 
@@ -88,7 +96,7 @@ const Navigation = () => {
             variant="ghost" 
             size="sm" 
             onClick={signOut}
-            className="text-gray-600 hover:text-green-700 hover:bg-green-50"
+            className="text-gray-600 hover:text-green-700 hover:bg-green-50 p-2"
           >
             <LogOut className="w-4 h-4" />
           </Button>

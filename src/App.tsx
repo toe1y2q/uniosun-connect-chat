@@ -13,6 +13,7 @@ import HomePage from "@/pages/HomePage";
 import TalentsPage from "@/pages/TalentsPage";
 import ProfileSettingsPage from "@/pages/ProfileSettingsPage";
 import AdminPage from "@/pages/AdminPage";
+import QuizPage from "@/pages/QuizPage";
 import NotFound from "./pages/NotFound";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useState, useEffect } from "react";
@@ -40,7 +41,7 @@ const AppContent = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
         <LoadingSpinner 
-          message="Connecting to UNIOSUN Connect..." 
+          message="Connecting to Hireveno..." 
           size="lg"
         />
       </div>
@@ -75,6 +76,15 @@ const AppContent = () => {
 
       {/* Standalone Admin Route */}
       <Route path="/admin" element={<AdminPage />} />
+
+      {/* Quiz Route */}
+      <Route path="/quiz" element={
+        user ? (
+          <QuizPage />
+        ) : (
+          <Navigate to="/auth" replace />
+        )
+      } />
 
       <Route path="/profile-settings" element={
         user ? (

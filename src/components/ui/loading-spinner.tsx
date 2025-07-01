@@ -52,7 +52,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       </div>
       
       <motion.p 
-        className={`text-gray-600 font-medium ${textSizeClasses[size]}`}
+        className={`text-gray-600 font-medium ${textSizeClasses[size]} text-center px-4`}
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       >
