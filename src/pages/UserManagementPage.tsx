@@ -15,11 +15,13 @@ import { toast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import { Navigate } from 'react-router-dom';
 
+type FilterRole = 'all' | 'student' | 'aspirant' | 'admin';
+
 const UserManagementPage = () => {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
+  const [filterRole, setFilterRole] = useState<FilterRole>('all');
 
   // Redirect if not admin
   if (!user || !profile || profile.role !== 'admin') {
@@ -133,7 +135,7 @@ const UserManagementPage = () => {
                 </div>
                 <select
                   value={filterRole}
-                  onChange={(e) => setFilterRole(e.target.value)}
+                  onChange={(e) => setFilterRole(e.target.value as FilterRole)}
                   className="px-3 py-2 border border-gray-300 rounded-md text-sm"
                 >
                   <option value="all">All Roles</option>
