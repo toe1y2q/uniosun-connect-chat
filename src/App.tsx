@@ -14,6 +14,8 @@ import TalentsPage from "@/pages/TalentsPage";
 import ProfileSettingsPage from "@/pages/ProfileSettingsPage";
 import AdminPage from "@/pages/AdminPage";
 import QuizPage from "@/pages/QuizPage";
+import UserManagementPage from "@/pages/UserManagementPage";
+import WithdrawalManagementPage from "@/pages/WithdrawalManagementPage";
 import NotFound from "./pages/NotFound";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useState, useEffect } from "react";
@@ -77,6 +79,10 @@ const AppContent = () => {
       {/* Standalone Admin Route */}
       <Route path="/admin" element={<AdminPage />} />
 
+      {/* Admin Management Routes */}
+      <Route path="/admin/users" element={<UserManagementPage />} />
+      <Route path="/admin/withdrawals" element={<WithdrawalManagementPage />} />
+
       {/* Quiz Route */}
       <Route path="/quiz" element={
         user ? (
@@ -103,9 +109,9 @@ const AppContent = () => {
             <Navigation />
             {!profile ? (
               <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center p-8">
-                  <h2 className="text-xl font-semibold mb-4">Setting up your profile...</h2>
-                  <p className="text-gray-600 mb-4">This may take a moment for new accounts.</p>
+                <div className="text-center p-4 sm:p-8">
+                  <h2 className="text-lg sm:text-xl font-semibold mb-4">Setting up your profile...</h2>
+                  <p className="text-sm sm:text-base text-gray-600 mb-4">This may take a moment for new accounts.</p>
                   <LoadingSpinner message="Loading your profile..." />
                 </div>
               </div>
@@ -114,13 +120,13 @@ const AppContent = () => {
                 {profile.role === 'student' && <StudentDashboard />}
                 {profile.role === 'aspirant' && <AspirantDashboard />}
                 {profile.role === 'admin' && (
-                  <div className="container mx-auto px-4 py-8">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-                      <h2 className="text-xl font-semibold text-blue-800 mb-2">Admin Access Available</h2>
-                      <p className="text-blue-700 mb-4">You have administrator privileges. Access the admin panel for advanced features.</p>
+                  <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-8">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+                      <h2 className="text-lg sm:text-xl font-semibold text-blue-800 mb-2">Admin Access Available</h2>
+                      <p className="text-sm sm:text-base text-blue-700 mb-4">You have administrator privileges. Access the admin panel for advanced features.</p>
                       <button 
                         onClick={() => window.location.href = '/admin'}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium text-sm"
                       >
                         Go to Admin Panel
                       </button>

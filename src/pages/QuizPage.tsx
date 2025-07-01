@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Clock, Trophy, CheckCircle, XCircle, RotateCcw, Award, ArrowLeft, ArrowRight } from 'lucide-react';
+import { BookOpen, Clock, Trophy, CheckCircle, XCircle, RotateCcw, Award, ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
@@ -36,7 +35,7 @@ const QuizPage = () => {
   const needsVerification = !profile?.is_verified;
 
   // Fetch quiz questions for user's department (limit to 10)
-  const { data: questions, isLoading: loadingQuestions } = useQuery({
+  const { data: questions, isLoading: loadingQuestions, error: questionsError } = useQuery({
     queryKey: ['quiz-questions', profile?.department_id],
     queryFn: async () => {
       if (!profile?.department_id) return [];
@@ -215,12 +214,63 @@ const QuizPage = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
-        <div className="px-4 py-6">
-          <div className="max-w-2xl mx-auto space-y-4">
+        <div className="px-3 py-4 sm:px-4 sm:py-6">
+          <div className="max-w-2xl mx-auto space-y-3 sm:space-y-4">
             <Card className="animate-pulse">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error or no questions message
+  if (questionsError || (canTakeQuiz && (!questions || questions.length === 0))) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="px-3 py-4 sm:px-4 sm:py-6">
+          <div className="max-w-2xl mx-auto">
+            {/* Header */}
+            <div className="mb-4 sm:mb-6">
+              <Link to="/dashboard" className="inline-flex items-center text-green-600 hover:text-green-700 mb-3 sm:mb-4 text-sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Link>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2">Department Quiz</h1>
+              <p className="text-xs sm:text-sm text-gray-600">Complete the quiz to become a verified talent on Hireveno</p>
+            </div>
+
+            {/* No Questions Available */}
+            <Card className="border-orange-200 bg-orange-50">
+              <CardContent className="p-4 sm:p-6 text-center">
+                <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-orange-600 mx-auto mb-4" />
+                <h3 className="text-base sm:text-lg font-semibold mb-2 text-orange-800">Quiz Questions Not Available</h3>
+                <p className="text-sm text-orange-700 mb-4">
+                  {questionsError 
+                    ? "There was an error loading the quiz questions. Please try again later."
+                    : "Quiz questions for your department are not yet available. Please contact your administrator or check back later."
+                  }
+                </p>
+                <div className="space-y-2 sm:space-y-3">
+                  <Link to="/dashboard">
+                    <Button className="w-full bg-green-600 hover:bg-green-700 text-sm">
+                      Return to Dashboard
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.location.reload()}
+                    className="w-full text-sm"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Retry Loading
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -232,16 +282,16 @@ const QuizPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      <div className="px-4 py-6">
+      <div className="px-3 py-4 sm:px-4 sm:py-6">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
-          <div className="mb-6">
-            <Link to="/dashboard" className="inline-flex items-center text-green-600 hover:text-green-700 mb-4">
+          <div className="mb-4 sm:mb-6">
+            <Link to="/dashboard" className="inline-flex items-center text-green-600 hover:text-green-700 mb-3 sm:mb-4 text-sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Link>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Department Quiz</h1>
-            <p className="text-sm text-gray-600">Complete the quiz to become a verified talent on Hireveno</p>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2">Department Quiz</h1>
+            <p className="text-xs sm:text-sm text-gray-600">Complete the quiz to become a verified talent on Hireveno</p>
           </div>
 
           {/* Show results */}
@@ -249,33 +299,33 @@ const QuizPage = () => {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="space-y-6"
+              className="space-y-4 sm:space-y-6"
             >
               <Card className={`border-2 ${quizScore >= 70 ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
-                <CardContent className="p-6 text-center">
+                <CardContent className="p-4 sm:p-6 text-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2, type: "spring" }}
                   >
                     {quizScore >= 70 ? (
-                      <Trophy className="w-12 h-12 text-green-600 mx-auto mb-4" />
+                      <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-green-600 mx-auto mb-4" />
                     ) : (
-                      <XCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+                      <XCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-600 mx-auto mb-4" />
                     )}
                   </motion.div>
                   
-                  <h2 className="text-lg sm:text-xl font-bold mb-4">
+                  <h2 className="text-base sm:text-lg md:text-xl font-bold mb-4">
                     {quizScore >= 70 ? '🎉 Congratulations!' : 'Quiz Completed'}
                   </h2>
                   
-                  <div className="text-3xl sm:text-4xl font-bold mb-4">
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
                     <span className={quizScore >= 70 ? 'text-green-600' : 'text-red-600'}>
                       {quizScore}%
                     </span>
                   </div>
                   
-                  <p className="text-sm text-gray-700 mb-6">
+                  <p className="text-xs sm:text-sm text-gray-700 mb-6">
                     {quizScore >= 70 
                       ? "You've earned your badge and can now receive bookings on Hireveno!"
                       : "You need 70% to pass. You can retry in 24 hours."
@@ -283,7 +333,7 @@ const QuizPage = () => {
                   </p>
                   
                   {quizScore >= 70 && (
-                    <Badge className="bg-green-100 text-green-800 text-sm px-3 py-1 mb-4">
+                    <Badge className="bg-green-100 text-green-800 text-xs sm:text-sm px-3 py-1 mb-4">
                       <Award className="w-4 h-4 mr-2" />
                       Verified Talent
                     </Badge>
@@ -291,7 +341,7 @@ const QuizPage = () => {
 
                   <div className="mt-6">
                     <Link to="/dashboard">
-                      <Button className="w-full">
+                      <Button className="w-full text-sm">
                         Return to Dashboard
                       </Button>
                     </Link>
@@ -303,14 +353,14 @@ const QuizPage = () => {
 
           {/* Quiz interface */}
           {isQuizActive && questions && !showResults && (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Timer and Progress */}
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex flex-col space-y-2 sm:space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-green-600" />
-                      <span className="font-semibold text-sm">
+                      <span className="font-semibold text-xs sm:text-sm">
                         Time: {formatTime(timeLeft)}
                       </span>
                     </div>
@@ -318,7 +368,7 @@ const QuizPage = () => {
                       Question {currentQuestionIndex + 1} of {questions.length}
                     </div>
                   </div>
-                  <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="h-2" />
+                  <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="h-2 mt-3" />
                 </CardContent>
               </Card>
 
@@ -332,12 +382,12 @@ const QuizPage = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <Card>
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-base sm:text-lg leading-tight">
+                    <CardHeader className="pb-3 sm:pb-4">
+                      <CardTitle className="text-sm sm:text-base leading-tight">
                         {questions[currentQuestionIndex].question}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className="space-y-2 sm:space-y-3">
                       {questions[currentQuestionIndex].options.map((option, index) => (
                         <motion.div
                           key={index}
@@ -346,20 +396,20 @@ const QuizPage = () => {
                         >
                           <Button
                             variant={selectedAnswers[currentQuestionIndex] === index ? "default" : "outline"}
-                            className="w-full text-left justify-start p-3 h-auto whitespace-normal text-sm"
+                            className="w-full text-left justify-start p-3 h-auto whitespace-normal text-xs sm:text-sm"
                             onClick={() => handleAnswerSelect(index)}
                           >
                             <div className="flex items-start gap-3">
-                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                              <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
                                 selectedAnswers[currentQuestionIndex] === index 
                                   ? 'bg-green-600 border-green-600' 
                                   : 'border-gray-300'
                               }`}>
                                 {selectedAnswers[currentQuestionIndex] === index && (
-                                  <CheckCircle className="w-3 h-3 text-white" />
+                                  <CheckCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                                 )}
                               </div>
-                              <span className="text-sm leading-tight">{option}</span>
+                              <span className="text-xs sm:text-sm leading-tight">{option}</span>
                             </div>
                           </Button>
                         </motion.div>
@@ -371,13 +421,13 @@ const QuizPage = () => {
 
               {/* Navigation */}
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
                     <Button
                       variant="outline"
                       onClick={handlePreviousQuestion}
                       disabled={currentQuestionIndex === 0}
-                      className="w-full sm:w-auto text-sm"
+                      className="w-full sm:w-auto text-xs sm:text-sm"
                       size="sm"
                     >
                       <ArrowLeft className="w-4 h-4 mr-2" />
@@ -392,7 +442,7 @@ const QuizPage = () => {
                       <Button
                         onClick={handleSubmitQuiz}
                         disabled={selectedAnswers.filter(a => a !== undefined).length !== questions.length}
-                        className="bg-green-600 hover:bg-green-700 w-full sm:w-auto text-sm"
+                        className="bg-green-600 hover:bg-green-700 w-full sm:w-auto text-xs sm:text-sm"
                         size="sm"
                       >
                         Submit Quiz
@@ -401,7 +451,7 @@ const QuizPage = () => {
                       <Button
                         onClick={handleNextQuestion}
                         disabled={selectedAnswers[currentQuestionIndex] === undefined}
-                        className="w-full sm:w-auto text-sm"
+                        className="w-full sm:w-auto text-xs sm:text-sm"
                         size="sm"
                       >
                         Next
@@ -416,13 +466,13 @@ const QuizPage = () => {
 
           {/* Quiz status display */}
           {!isQuizActive && !showResults && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {needsVerification && (
                 <Card className="border-yellow-200 bg-yellow-50">
-                  <CardContent className="p-6 text-center">
-                    <Clock className="w-10 h-10 text-yellow-600 mx-auto mb-4" />
-                    <h3 className="text-base font-semibold mb-2">Verification Pending</h3>
-                    <p className="text-sm text-gray-600">
+                  <CardContent className="p-4 sm:p-6 text-center">
+                    <Clock className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-600 mx-auto mb-4" />
+                    <h3 className="text-sm sm:text-base font-semibold mb-2">Verification Pending</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">
                       Your account is being verified by our admin team. You'll be able to take the quiz once verified.
                     </p>
                   </CardContent>
@@ -431,13 +481,13 @@ const QuizPage = () => {
 
               {hasPassedQuiz && (
                 <Card className="border-green-200 bg-green-50">
-                  <CardContent className="p-6 text-center">
-                    <Trophy className="w-10 h-10 text-green-600 mx-auto mb-4" />
-                    <h3 className="text-base font-semibold mb-2">Quiz Completed!</h3>
-                    <p className="text-sm text-gray-600 mb-4">
+                  <CardContent className="p-4 sm:p-6 text-center">
+                    <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-green-600 mx-auto mb-4" />
+                    <h3 className="text-sm sm:text-base font-semibold mb-2">Quiz Completed!</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-4">
                       You've successfully passed the quiz with a score of {profile.quiz_score}%
                     </p>
-                    <Badge className="bg-green-100 text-green-800 text-sm">
+                    <Badge className="bg-green-100 text-green-800 text-xs sm:text-sm">
                       <Award className="w-4 h-4 mr-1" />
                       Verified Talent
                     </Badge>
@@ -445,36 +495,36 @@ const QuizPage = () => {
                 </Card>
               )}
 
-              {canTakeQuiz && !hasPassedQuiz && (
+              {canTakeQuiz && !hasPassedQuiz && questions && questions.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <BookOpen className="w-5 h-5" />
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
                       Department Quiz
                     </CardTitle>
-                    <CardDescription className="text-sm">
+                    <CardDescription className="text-xs sm:text-sm">
                       Take the quiz to become a verified talent and start receiving bookings on Hireveno
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <div className="text-lg font-bold text-green-600">10</div>
+                  <CardContent className="space-y-3 sm:space-y-4">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                      <div className="text-center p-2 sm:p-3 bg-green-50 rounded-lg">
+                        <div className="text-base sm:text-lg font-bold text-green-600">10</div>
                         <div className="text-xs text-gray-600">Questions</div>
                       </div>
-                      <div className="text-center p-3 bg-blue-50 rounded-lg">
-                        <div className="text-lg font-bold text-blue-600">10</div>
+                      <div className="text-center p-2 sm:p-3 bg-blue-50 rounded-lg">
+                        <div className="text-base sm:text-lg font-bold text-blue-600">10</div>
                         <div className="text-xs text-gray-600">Minutes</div>
                       </div>
-                      <div className="text-center p-3 bg-orange-50 rounded-lg">
-                        <div className="text-lg font-bold text-orange-600">70%</div>
+                      <div className="text-center p-2 sm:p-3 bg-orange-50 rounded-lg">
+                        <div className="text-base sm:text-lg font-bold text-orange-600">70%</div>
                         <div className="text-xs text-gray-600">Pass Score</div>
                       </div>
                     </div>
 
                     {!canRetry && lastAttempt && (
-                      <div className="text-center p-4 bg-red-50 rounded-lg">
-                        <RotateCcw className="w-6 h-6 text-red-600 mx-auto mb-2" />
+                      <div className="text-center p-3 sm:p-4 bg-red-50 rounded-lg">
+                        <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 mx-auto mb-2" />
                         <p className="text-xs text-red-600">
                           You can retry after: {new Date(lastAttempt.next_attempt_at!).toLocaleString()}
                         </p>
@@ -484,7 +534,7 @@ const QuizPage = () => {
                     <Button
                       onClick={startQuiz}
                       disabled={!canRetry || !questions?.length}
-                      className="w-full bg-green-600 hover:bg-green-700 text-sm"
+                      className="w-full bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
                     >
                       {!canRetry ? 'Quiz Attempt Pending' : 'Start Quiz'}
                     </Button>
