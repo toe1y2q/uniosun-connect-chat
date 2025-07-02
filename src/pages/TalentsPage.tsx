@@ -6,11 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Search, Star, MapPin, Calendar, BookOpen, GraduationCap, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Search, Star, MapPin, Calendar, BookOpen, GraduationCap, MessageCircle, Eye } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import BookingModal from '@/components/booking/BookingModal';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/components/auth/AuthContext';
 
 interface TalentsPageProps {
   onAuthRequired?: () => void;
@@ -21,6 +22,7 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const navigate = useNavigate();
+  const { profile } = useAuth();
 
   // Fetch verified students with their department info
   const { data: talents, isLoading } = useQuery({
@@ -52,13 +54,15 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
     setShowBookingModal(true);
   };
 
-  const handleGoBack = () => {
-    navigate(-1); // Go back to previous page
+  const handleViewProfile = (studentId: string) => {
+    navigate(`/student/${studentId}`);
   };
+
+  const canBookSession = profile?.role === 'aspirant';
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading talented students...</p>
@@ -69,49 +73,47 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-md mx-auto px-4 py-6">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6"
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <Button
-              onClick={handleGoBack}
-              variant="outline"
-              className="border-green-200 text-green-600 hover:bg-green-50"
+              onClick={() => navigate(-1)}
+              variant="ghost"
+              size="sm"
+              className="p-2"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Go Back
+              <ArrowLeft className="w-5 h-5" />
             </Button>
+            <h1 className="text-lg font-semibold text-gray-900">Find Talents</h1>
+            <div className="w-9" /> {/* Spacer */}
           </div>
           
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Meet Our <span className="text-green-600">Talented Students</span>
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Connect with verified UNIOSUN students who have proven their expertise. 
-              Book personalized sessions to get help with your academic journey.
+          <div className="text-center mb-6">
+            <p className="text-sm text-gray-600 mb-4">
+              Connect with verified UNIOSUN students
             </p>
           </div>
 
           {/* Search */}
-          <div className="relative max-w-md mx-auto">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               type="text"
               placeholder="Search by name or department..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 border-green-200 focus:border-green-400"
+              className="pl-10 border-green-200 focus:border-green-400 h-12"
             />
           </div>
         </motion.div>
 
         {/* Talents Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {filteredTalents?.map((talent, index) => (
             <motion.div
               key={talent.id}
@@ -119,52 +121,59 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="border-green-200 hover:shadow-lg transition-all duration-300 hover:border-green-300">
-                <CardHeader className="text-center pb-4">
-                  <div className="flex justify-center mb-4">
-                    <Avatar className="w-20 h-20 border-4 border-green-200">
+              <Card className="border-green-200 hover:shadow-md transition-all duration-300 hover:border-green-300">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Avatar className="w-12 h-12 border-2 border-green-200">
                       <AvatarImage src={talent.profile_image} />
-                      <AvatarFallback className="bg-green-100 text-green-600 text-xl">
+                      <AvatarFallback className="bg-green-100 text-green-600 text-sm">
                         {talent.name.split(' ').map((n: string) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
-                  </div>
-                  <CardTitle className="text-xl text-gray-900">{talent.name}</CardTitle>
-                  <CardDescription className="flex items-center justify-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    {talent.departments?.name || 'General Studies'}
-                  </CardDescription>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* Stats */}
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Star className="w-4 h-4 text-yellow-500" />
-                        <span className="font-semibold">Quiz Score</span>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-base truncate">{talent.name}</h4>
+                      <div className="flex items-center gap-1 mt-1">
+                        <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span className="text-sm text-gray-600 truncate">{talent.departments?.name}</span>
                       </div>
-                      <p className="text-2xl font-bold text-green-600">{talent.quiz_score || 0}%</p>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <GraduationCap className="w-4 h-4 text-green-600" />
-                        <span className="font-semibold">Verified</span>
-                      </div>
-                      <Badge className="bg-green-100 text-green-800">
-                        Talent
-                      </Badge>
                     </div>
                   </div>
-
-                  {/* Action Button */}
-                  <Button
-                    onClick={() => handleBookSession(talent)}
-                    className="w-full bg-green-600 hover:bg-green-700"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Book Session
-                  </Button>
+                  
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-medium">4.8</span>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800 text-xs">
+                      {talent.quiz_score ? `${talent.quiz_score}%` : 'Verified'}
+                    </Badge>
+                  </div>
+                  
+                  <div className="text-center mb-4">
+                    <div className="text-lg font-semibold text-green-600">₦1,000/hour</div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => handleViewProfile(talent.id)}
+                      variant="outline"
+                      className="flex-1 border-green-200 text-green-700 hover:bg-green-50"
+                      size="sm"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View Profile
+                    </Button>
+                    {canBookSession && (
+                      <Button 
+                        onClick={() => handleBookSession(talent)}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-1" />
+                        Book
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -179,10 +188,10 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
             className="text-center py-12"
           >
             <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">
               {searchTerm ? 'No talents found' : 'No talents available yet'}
             </h3>
-            <p className="text-gray-500">
+            <p className="text-sm text-gray-500">
               {searchTerm 
                 ? 'Try adjusting your search terms' 
                 : 'Students are working hard to earn their talent badges!'
