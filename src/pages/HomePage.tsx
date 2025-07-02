@@ -35,12 +35,11 @@ const HomePage = ({
       <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-green-600">
-              Hireveno
-            </span>
+            <img 
+              src="/lovable-uploads/2cfdba4a-2a41-4b35-b9db-a87db18e0f7c.png" 
+              alt="Hireveno Logo" 
+              className="h-8 w-auto"
+            />
           </div>
           <Button onClick={onGetStarted} className="bg-green-600 hover:bg-green-700 text-sm md:text-base md:px-4 md:py-2 px-[7px] mx-[14px] my-0 py-[9px]">
             Get Started
@@ -198,10 +197,11 @@ const HomePage = ({
       <footer className="px-4 py-8 bg-gray-900 text-white">
         <div className="container mx-auto text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-2xl font-bold">Hireveno</span>
+            <img 
+              src="/lovable-uploads/2cfdba4a-2a41-4b35-b9db-a87db18e0f7c.png" 
+              alt="Hireveno Logo" 
+              className="h-8 w-auto filter brightness-0 invert"
+            />
           </div>
           <p className="text-gray-400 mb-4">Empowering the UNIOSUN community through connected learning</p>
           <p className="text-gray-500 text-sm">© 2024 Hireveno. Built with ❤️ for UNIOSUN students and aspirants.</p>
