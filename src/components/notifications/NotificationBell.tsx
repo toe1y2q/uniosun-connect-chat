@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Bell, MessageSquare, DollarSign, Calendar, Star } from 'lucide-react';
+import { Bell, MessageSquare, DollarSign, Calendar, Star, BookOpen } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,81 +19,130 @@ const NotificationBell = () => {
 
       const notifications: any[] = [];
 
-      // Fetch recent sessions for the user
-      const { data: sessions } = await supabase
-        .from('sessions')
-        .select(`
-          *,
-          client:users!sessions_client_id_fkey (name),
-          student:users!sessions_student_id_fkey (name)
-        `)
-        .or(`client_id.eq.${user.id},student_id.eq.${user.id}`)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      if (profile?.role === 'aspirant') {
+        // Fetch recent sessions for aspirants
+        const { data: sessions } = await supabase
+          .from('sessions')
+          .select(`
+            *,
+            student:users!sessions_student_id_fkey (name),
+            reviews!reviews_session_id_fkey (id)
+          `)
+          .eq('client_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
 
-      // Convert sessions to notifications
-      sessions?.forEach(session => {
-        const isClient = session.client_id === user.id;
-        const otherUser = isClient ? session.student : session.client;
-        
-        if (session.status === 'confirmed') {
-          notifications.push({
-            id: `session-${session.id}`,
-            type: 'session',
-            message: `Session with ${otherUser?.name} is confirmed for ${new Date(session.scheduled_at).toLocaleDateString()}`,
-            time: session.created_at,
-            icon: Calendar,
-            unread: true
-          });
-        } else if (session.status === 'completed' && isClient) {
-          notifications.push({
-            id: `session-completed-${session.id}`,
-            type: 'session',
-            message: `Session with ${otherUser?.name} completed. Please submit your review.`,
-            time: session.updated_at || session.created_at,
-            icon: Star,
-            unread: true
-          });
-        }
-      });
+        sessions?.forEach(session => {
+          if (session.status === 'confirmed') {
+            notifications.push({
+              id: `session-${session.id}`,
+              type: 'session',
+              message: `Session with ${session.student?.name} is confirmed for ${new Date(session.scheduled_at).toLocaleDateString()}`,
+              time: session.created_at,
+              icon: Calendar,
+              unread: true,
+              sessionId: session.id
+            });
+          } else if (session.status === 'completed' && !session.reviews?.length) {
+            notifications.push({
+              id: `review-needed-${session.id}`,
+              type: 'review',
+              message: `Please rate your session with ${session.student?.name}`,
+              time: session.updated_at || session.created_at,
+              icon: Star,
+              unread: true,
+              sessionId: session.id
+            });
+          }
+        });
 
-      // Fetch recent transactions
-      const { data: transactions } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+        // Fetch recent payment transactions for aspirants
+        const { data: transactions } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('type', 'payment')
+          .order('created_at', { ascending: false })
+          .limit(5);
 
-      transactions?.forEach(transaction => {
-        if (transaction.type === 'earning' && transaction.status === 'completed') {
-          notifications.push({
-            id: `earning-${transaction.id}`,
-            type: 'payment',
-            message: `You received ₦${(transaction.amount / 100).toLocaleString()} for tutoring session`,
-            time: transaction.created_at,
-            icon: DollarSign,
-            unread: true
-          });
-        } else if (transaction.type === 'payment' && transaction.status === 'completed') {
-          notifications.push({
-            id: `payment-${transaction.id}`,
-            type: 'payment',
-            message: `Payment of ₦${(transaction.amount / 100).toLocaleString()} processed successfully`,
-            time: transaction.created_at,
-            icon: DollarSign,
-            unread: true
-          });
-        }
-      });
+        transactions?.forEach(transaction => {
+          if (transaction.status === 'completed') {
+            notifications.push({
+              id: `payment-${transaction.id}`,
+              type: 'payment',
+              message: `Payment of ₦${(transaction.amount / 100).toLocaleString()} processed successfully`,
+              time: transaction.created_at,
+              icon: DollarSign,
+              unread: true
+            });
+          }
+        });
+      }
 
-      // Fetch recent reviews if user is a student
       if (profile?.role === 'student') {
+        // Fetch sessions where student is the tutor
+        const { data: sessions } = await supabase
+          .from('sessions')
+          .select(`
+            *,
+            client:users!sessions_client_id_fkey (name)
+          `)
+          .eq('student_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        sessions?.forEach(session => {
+          if (session.status === 'confirmed') {
+            notifications.push({
+              id: `session-booked-${session.id}`,
+              type: 'session',
+              message: `New session booked by ${session.client?.name} for ${new Date(session.scheduled_at).toLocaleDateString()}`,
+              time: session.created_at,
+              icon: BookOpen,
+              unread: true,
+              sessionId: session.id
+            });
+          } else if (session.status === 'completed') {
+            notifications.push({
+              id: `session-completed-${session.id}`,
+              type: 'session',
+              message: `Session with ${session.client?.name} completed successfully`,
+              time: session.updated_at || session.created_at,
+              icon: Calendar,
+              unread: true,
+              sessionId: session.id
+            });
+          }
+        });
+
+        // Fetch earning transactions for students
+        const { data: transactions } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('type', 'earning')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        transactions?.forEach(transaction => {
+          if (transaction.status === 'completed') {
+            notifications.push({
+              id: `earning-${transaction.id}`,
+              type: 'payment',
+              message: `You received ₦${(transaction.amount / 100).toLocaleString()} for tutoring session`,
+              time: transaction.created_at,
+              icon: DollarSign,
+              unread: true
+            });
+          }
+        });
+
+        // Fetch reviews received as a student/tutor
         const { data: reviews } = await supabase
           .from('reviews')
           .select(`
             *,
-            sessions!inner(student_id)
+            sessions!inner(student_id, client:users!sessions_client_id_fkey(name))
           `)
           .eq('sessions.student_id', user.id)
           .order('created_at', { ascending: false })
@@ -100,9 +150,9 @@ const NotificationBell = () => {
 
         reviews?.forEach(review => {
           notifications.push({
-            id: `review-${review.id}`,
+            id: `review-received-${review.id}`,
             type: 'review',
-            message: `You received a ${review.rating}-star review: "${review.comment?.substring(0, 50)}${review.comment && review.comment.length > 50 ? '...' : ''}"`,
+            message: `You received a ${review.rating}-star review from ${review.sessions.client?.name}`,
             time: review.created_at,
             icon: Star,
             unread: true
@@ -133,13 +183,14 @@ const NotificationBell = () => {
   };
 
   const handleNotificationClick = (notification: any) => {
-    if (notification.type === 'session' && notification.message.includes('Please submit your review')) {
-      // Extract session ID from notification ID
-      const sessionId = notification.id.replace('session-completed-', '');
-      window.location.href = `/chat/${sessionId}`;
-    } else if (notification.type === 'session') {
-      window.location.href = '/dashboard';
-    } else if (notification.type === 'payment') {
+    if (notification.type === 'review' && notification.message.includes('Please rate')) {
+      // Navigate to review page
+      window.location.href = `/review/${notification.sessionId}`;
+    } else if (notification.type === 'session' && notification.sessionId) {
+      // Navigate to chat for the session
+      window.location.href = `/chat/${notification.sessionId}`;
+    } else {
+      // Navigate to dashboard for other notifications
       window.location.href = '/dashboard';
     }
   };
@@ -182,12 +233,14 @@ const NotificationBell = () => {
                        <div className={`p-2 rounded-full ${
                          notification.type === 'payment' ? 'bg-green-100' :
                          notification.type === 'session' ? 'bg-blue-100' :
-                         'bg-yellow-100'
+                         notification.type === 'review' ? 'bg-yellow-100' :
+                         'bg-gray-100'
                        }`}>
                          <IconComponent className={`w-4 h-4 ${
                            notification.type === 'payment' ? 'text-green-600' :
                            notification.type === 'session' ? 'text-blue-600' :
-                           'text-yellow-600'
+                           notification.type === 'review' ? 'text-yellow-600' :
+                           'text-gray-600'
                          }`} />
                        </div>
                        <div className="flex-1 min-w-0">

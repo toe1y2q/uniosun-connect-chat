@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, Clock, DollarSign, Star, User, GraduationCap, Award, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/components/auth/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +26,7 @@ interface BookingModalProps {
 const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [duration, setDuration] = useState('60');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
@@ -34,6 +35,24 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
   const [showCongratulations, setShowCongratulations] = useState(false);
   const [sessionData, setSessionData] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Fetch user's current wallet balance
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile', profile?.id],
+    queryFn: async () => {
+      if (!profile?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('wallet_balance')
+        .eq('id', profile.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!profile?.id
+  });
 
   const { data: reviews } = useQuery({
     queryKey: ['student-reviews', student?.id],
@@ -75,8 +94,22 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
     try {
       const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
       const amount = getSessionAmount();
+      const currentBalance = userProfile?.wallet_balance || 0;
 
-      // Create session
+      console.log('Wallet payment attempt:', {
+        amount,
+        currentBalance,
+        canPay: currentBalance >= amount
+      });
+
+      // Check if user has sufficient balance
+      if (currentBalance < amount) {
+        toast.error('Insufficient wallet balance');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Create session first
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -86,12 +119,23 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
           scheduled_at: scheduledAt.toISOString(),
           description: description,
           amount: amount,
-          status: 'pending'
+          status: 'confirmed' // Automatically confirm for successful payments
         })
         .select()
         .single();
 
       if (sessionError) throw sessionError;
+
+      // Update user's wallet balance
+      const newBalance = currentBalance - amount;
+      const { error: walletError } = await supabase
+        .from('users')
+        .update({ 
+          wallet_balance: newBalance 
+        })
+        .eq('id', profile?.id);
+
+      if (walletError) throw walletError;
 
       // Create payment transaction
       const { error: transactionError } = await supabase
@@ -107,15 +151,22 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
 
       if (transactionError) throw transactionError;
 
-      // Update user's wallet balance
-      const { error: walletError } = await supabase
-        .from('users')
-        .update({ 
-          wallet_balance: (profile?.wallet_balance || 0) - amount 
-        })
-        .eq('id', profile?.id);
+      // Create earning transaction for the student
+      const { error: earningError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: student.id,
+          type: 'earning',
+          amount: amount,
+          session_id: session.id,
+          status: 'completed',
+          description: `Session earning from ${profile?.name}`
+        });
 
-      if (walletError) throw walletError;
+      if (earningError) throw earningError;
+
+      // Refresh user profile data
+      queryClient.invalidateQueries({ queryKey: ['user-profile', profile?.id] });
 
       setSessionData({ ...session, student });
       setShowCongratulations(true);
@@ -146,7 +197,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
           scheduled_at: scheduledAt.toISOString(),
           description: description,
           amount: amount,
-          status: 'pending'
+          status: 'confirmed' // Automatically confirm for successful payments
         })
         .select()
         .single();
@@ -167,6 +218,20 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
         });
 
       if (transactionError) throw transactionError;
+
+      // Create earning transaction for the student
+      const { error: earningError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: student.id,
+          type: 'earning',
+          amount: amount,
+          session_id: session.id,
+          status: 'completed',
+          description: `Session earning from ${profile?.name}`
+        });
+
+      if (earningError) throw earningError;
 
       setSessionData({ ...session, student });
       setShowCongratulations(true);
@@ -351,7 +416,22 @@ Thank you for choosing Hireveno!
                   </p>
                 </CardContent>
               </Card>
-            ) : !showPayment ? (
+            ) : showCongratulations ? (
+              <CongratulationsPage
+                sessionData={sessionData}
+                onProceedToChat={handleProceedToChat}
+                onGenerateReceipt={handleGenerateReceipt}
+                onClose={onClose}
+              />
+            ) : showPayment ? (
+              <PaymentSelector
+                walletBalance={userProfile?.wallet_balance || 0}
+                sessionAmount={getSessionAmount()}
+                onWalletPayment={handleWalletPayment}
+                onFlutterwavePayment={handleFlutterwavePayment}
+                isProcessing={isProcessing}
+              />
+            ) : (
               <form onSubmit={handleBookingSubmit} className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -451,21 +531,6 @@ Thank you for choosing Hireveno!
                   </Button>
                 </div>
               </form>
-            ) : showCongratulations ? (
-              <CongratulationsPage
-                sessionData={sessionData}
-                onProceedToChat={handleProceedToChat}
-                onGenerateReceipt={handleGenerateReceipt}
-                onClose={onClose}
-              />
-            ) : (
-              <PaymentSelector
-                walletBalance={profile?.wallet_balance || 0}
-                sessionAmount={getSessionAmount()}
-                onWalletPayment={handleWalletPayment}
-                onFlutterwavePayment={handleFlutterwavePayment}
-                isProcessing={isProcessing}
-              />
             )}
           </TabsContent>
         </Tabs>
