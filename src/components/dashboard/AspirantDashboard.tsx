@@ -108,40 +108,40 @@ const AspirantDashboard = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+            <div className="flex items-center gap-3 sm:gap-4">
               <AvatarUpload size="md" showUploadButton={false} />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
                   Welcome, {profile?.name}!
                 </h1>
-                <p className="text-gray-600">UNIOSUN Aspirant Dashboard</p>
+                <p className="text-sm sm:text-base text-gray-600">UNIOSUN Aspirant Dashboard</p>
               </div>
             </div>
-            <Badge className="bg-blue-100 text-blue-800">
-              <Users className="w-4 h-4 mr-1" />
+            <Badge className="bg-blue-100 text-blue-800 text-xs sm:text-sm self-start sm:self-center">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               Aspirant
             </Badge>
           </div>
 
-          <Card className="mb-6 border-green-200 bg-gradient-to-r from-green-50 to-green-100">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-green-600 text-white">
-                  <GraduationCap className="w-6 h-6" />
+          <Card className="mb-4 sm:mb-6 border-green-200 bg-gradient-to-r from-green-50 to-green-100">
+            <CardContent className="p-4 sm:pt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 rounded-full bg-green-600 text-white self-start">
+                  <GraduationCap className="w-4 h-4 sm:w-6 sm:h-6" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-green-800">Ready to Connect with UNIOSUN Students?</h3>
-                  <p className="text-green-700">Browse verified student talents and book study sessions to help with your university preparation.</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-green-800 text-sm sm:text-base">Ready to Connect with UNIOSUN Students?</h3>
+                  <p className="text-green-700 text-xs sm:text-sm">Browse verified student talents and book study sessions to help with your university preparation.</p>
                 </div>
                 <Button 
                   onClick={() => navigate('/talents')}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2 whitespace-nowrap"
                 >
                   Browse Talents
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
                 </Button>
               </div>
             </CardContent>
@@ -150,45 +150,45 @@ const AspirantDashboard = () => {
 
         <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-7 bg-green-100 text-xs sm:text-sm h-auto p-1">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
               <span className="hidden sm:inline">Overview</span>
               <span className="sm:hidden">Home</span>
             </TabsTrigger>
-            <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+            <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
               <Wallet className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
               <span className="hidden sm:inline">Wallet</span>
             </TabsTrigger>
-            <TabsTrigger value="talents" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">Find Talents</span>
-              <span className="sm:hidden">Talents</span>
+            <TabsTrigger value="talents" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
+              <span className="hidden lg:inline">Find Talents</span>
+              <span className="lg:hidden">Talents</span>
             </TabsTrigger>
-            <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">My Sessions</span>
-              <span className="sm:hidden">Sessions</span>
+            <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
+              <span className="hidden lg:inline">My Sessions</span>
+              <span className="lg:hidden">Sessions</span>
             </TabsTrigger>
-            <TabsTrigger value="departments" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">Departments</span>
-              <span className="sm:hidden">Depts</span>
+            <TabsTrigger value="departments" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
+              <span className="hidden lg:inline">Departments</span>
+              <span className="lg:hidden">Depts</span>
             </TabsTrigger>
-            <TabsTrigger value="resources" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">Resources</span>
-              <span className="sm:hidden">Info</span>
+            <TabsTrigger value="resources" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
+              <span className="hidden lg:inline">Resources</span>
+              <span className="lg:hidden">Info</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">Settings</span>
-              <span className="sm:hidden">Set</span>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
+              <span className="hidden lg:inline">Settings</span>
+              <span className="lg:hidden">Set</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <TabsContent value="overview" className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               <Card className="border-green-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
-                  <Calendar className="h-4 w-4 text-green-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Sessions</CardTitle>
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{totalSessions}</div>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <div className="text-lg sm:text-2xl font-bold text-green-600">{totalSessions}</div>
                   <p className="text-xs text-muted-foreground">
                     Booked this month
                   </p>
@@ -196,12 +196,12 @@ const AspirantDashboard = () => {
               </Card>
 
               <Card className="border-green-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                  <Award className="h-4 w-4 text-green-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Completed</CardTitle>
+                  <Award className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{completedSessions}</div>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <div className="text-lg sm:text-2xl font-bold text-green-600">{completedSessions}</div>
                   <p className="text-xs text-muted-foreground">
                     Finished sessions
                   </p>
@@ -209,12 +209,12 @@ const AspirantDashboard = () => {
               </Card>
 
               <Card className="border-green-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
-                  <Clock className="h-4 w-4 text-green-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Upcoming</CardTitle>
+                  <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{upcomingSessions}</div>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <div className="text-lg sm:text-2xl font-bold text-green-600">{upcomingSessions}</div>
                   <p className="text-xs text-muted-foreground">
                     Scheduled sessions
                   </p>
@@ -222,12 +222,12 @@ const AspirantDashboard = () => {
               </Card>
 
               <Card className="border-green-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-                  <DollarSign className="h-4 w-4 text-green-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Spent</CardTitle>
+                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">₦{(totalSpent / 100).toLocaleString()}</div>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <div className="text-lg sm:text-2xl font-bold text-green-600">₦{(totalSpent / 100).toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground">
                     On tutoring
                   </p>
