@@ -11,6 +11,7 @@ import AspirantDashboard from "@/components/dashboard/AspirantDashboard";
 import Navigation from "@/components/Navigation";
 import HomePage from "@/pages/HomePage";
 import TalentsPage from "@/pages/TalentsPage";
+import StudentDetailPage from "@/pages/StudentDetailPage";
 import ProfileSettingsPage from "@/pages/ProfileSettingsPage";
 import AdminPage from "@/pages/AdminPage";
 import QuizPage from "@/pages/QuizPage";
@@ -66,6 +67,10 @@ const AppContent = () => {
       
       <Route path="/talents" element={
         <TalentsPage onAuthRequired={() => setShowAuth(true)} />
+      } />
+      
+      <Route path="/student/:id" element={
+        <StudentDetailPage />
       } />
       
       <Route path="/auth" element={

@@ -157,14 +157,23 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
                     </div>
                   </div>
 
-                  {/* Action Button */}
-                  <Button
-                    onClick={() => handleBookSession(talent)}
-                    className="w-full bg-green-600 hover:bg-green-700"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Book Session
-                  </Button>
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => navigate(`/student/${talent.id}`)}
+                      variant="outline"
+                      className="w-full border-green-200 text-green-600 hover:bg-green-50"
+                    >
+                      View Profile
+                    </Button>
+                    <Button
+                      onClick={() => handleBookSession(talent)}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Book Session
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
