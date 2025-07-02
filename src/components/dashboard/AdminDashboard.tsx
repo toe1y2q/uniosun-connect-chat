@@ -15,6 +15,7 @@ import { Users, GraduationCap, CheckCircle, XCircle, Eye, Shield, BarChart3, Clo
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import AdminModerationPanel from './AdminModerationPanel';
+import PlatformAnalytics from '@/components/analytics/PlatformAnalytics';
 
 const AdminDashboard = () => {
   const { profile } = useAuth();
@@ -388,19 +389,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4">
-            <Card className="border-green-200">
-              <CardHeader>
-                <CardTitle className="text-green-800 text-base">Platform Analytics</CardTitle>
-                <CardDescription className="text-xs">View detailed platform statistics and trends</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-6">
-                  <BarChart3 className="w-8 h-8 sm:w-12 sm:h-12 text-green-400 mx-auto mb-4" />
-                  <h3 className="text-base font-semibold mb-2">Analytics Dashboard</h3>
-                  <p className="text-sm text-gray-600">Detailed analytics and reporting features coming soon</p>
-                </div>
-              </CardContent>
-            </Card>
+            <PlatformAnalytics />
           </TabsContent>
         </Tabs>
       </div>

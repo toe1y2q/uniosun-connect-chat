@@ -231,6 +231,13 @@ const StudentDashboard = () => {
                 >
                   Profile
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="settings" 
+                  ref={(el) => registerTab('settings', el)}
+                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                >
+                  Settings
+                </TabsTrigger>
               </TabsList>
             </div>
           </div>
@@ -365,6 +372,27 @@ const StudentDashboard = () => {
             <div className="w-full">
               <ProfileSettings />
             </div>
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4">
+            <Card className="border-green-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-800">
+                  <Settings className="w-5 h-5" />
+                  Account Settings
+                </CardTitle>
+                <CardDescription>
+                  Manage your account preferences and security
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 p-4 sm:p-6">
+                <div className="text-center py-6">
+                  <Settings className="w-8 h-8 text-green-400 mx-auto mb-4" />
+                  <h3 className="text-base font-semibold mb-2">Account Settings</h3>
+                  <p className="text-sm text-gray-600">Configure your account preferences and security settings</p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

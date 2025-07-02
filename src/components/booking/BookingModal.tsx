@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar, Clock, User, Star, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import PaymentProcessor from '@/components/payment/PaymentProcessor';
+import WalletPayment from '@/components/payment/WalletPayment';
 
 interface Student {
   id: string;
@@ -33,7 +34,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
   student,
   onBookingSuccess
 }) => {
-  const [step, setStep] = useState<'details' | 'payment' | 'success'>('details');
+  const [step, setStep] = useState<'details' | 'payment' | 'wallet' | 'success'>('details');
+  const [paymentMethod, setPaymentMethod] = useState<'flutterwave' | 'wallet'>('flutterwave');
   const [formData, setFormData] = useState({
     duration: 30,
     scheduled_at: '',
@@ -55,7 +57,11 @@ const BookingModal: React.FC<BookingModalProps> = ({
       return;
     }
 
-    setStep('payment');
+    if (paymentMethod === 'wallet') {
+      setStep('wallet');
+    } else {
+      setStep('payment');
+    }
   };
 
   const handlePaymentSuccess = (newSessionId: string) => {
@@ -65,6 +71,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
   const handleClose = () => {
     setStep('details');
+    setPaymentMethod('flutterwave');
     setFormData({
       duration: 30,
       scheduled_at: '',
@@ -171,6 +178,37 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 />
               </div>
 
+              {/* Payment Method Selection */}
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <h4 className="font-semibold text-blue-800 mb-3">Select Payment Method</h4>
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="flutterwave"
+                        checked={paymentMethod === 'flutterwave'}
+                        onChange={(e) => setPaymentMethod(e.target.value as 'flutterwave' | 'wallet')}
+                        className="text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm">Card/Bank Payment (Flutterwave)</span>
+                    </label>
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="wallet"
+                        checked={paymentMethod === 'wallet'}
+                        onChange={(e) => setPaymentMethod(e.target.value as 'flutterwave' | 'wallet')}
+                        className="text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm">Wallet Balance</span>
+                    </label>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Pricing */}
               <Card className="bg-green-50 border-green-200">
                 <CardContent className="p-4">
@@ -207,6 +245,19 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
         {step === 'payment' && (
           <PaymentProcessor
+            sessionData={{
+              studentId: student.id,
+              duration: formData.duration,
+              scheduledAt: formData.scheduled_at,
+              description: formData.description
+            }}
+            onSuccess={handlePaymentSuccess}
+            onCancel={() => setStep('details')}
+          />
+        )}
+
+        {step === 'wallet' && (
+          <WalletPayment
             sessionData={{
               studentId: student.id,
               duration: formData.duration,
