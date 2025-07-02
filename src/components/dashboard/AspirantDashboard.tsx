@@ -1,9 +1,11 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,48 +116,50 @@ const AspirantDashboard = () => {
   const upcomingSessions = sessions?.filter(s => s.status === 'confirmed').length || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-100 p-3 sm:p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-100 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 sm:mb-8"
+          className="mb-4 sm:mb-8"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <AvatarUpload size="md" showUploadButton={false} />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <AvatarUpload size="sm" showUploadButton={false} className="flex-shrink-0" />
               <div className="min-w-0 flex-1">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
+                <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
                   Welcome back, {profile?.name}!
                 </h1>
-                <p className="text-sm sm:text-base text-gray-600">UNIOSUN Aspirant Dashboard</p>
+                <p className="text-xs sm:text-base text-gray-600 truncate">UNIOSUN Aspirant Dashboard</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge className="bg-blue-100 text-blue-800 text-xs sm:text-sm">
-                <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+            <div className="flex items-center gap-1 flex-wrap">
+              <Badge className="bg-blue-100 text-blue-800 text-xs px-2 py-1">
+                <BookOpen className="w-3 h-3 mr-1" />
                 Aspirant
               </Badge>
               {profile?.is_verified && (
-                <Badge className="bg-green-100 text-green-800 text-xs sm:text-sm">
-                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <Badge className="bg-green-100 text-green-800 text-xs px-2 py-1">
+                  <CheckCircle className="w-3 h-3 mr-1" />
                   Verified
                 </Badge>
               )}
             </div>
           </div>
 
-          <Card className="mb-4 sm:mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-100">
-            <CardContent className="p-4 sm:pt-6">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                <div className="p-2 sm:p-3 rounded-full bg-blue-600 text-white self-start">
-                  <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />
+          <Card className="mb-3 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-100">
+            <CardContent className="p-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="flex items-center gap-2 flex-1">
+                  <div className="p-2 rounded-full bg-blue-600 text-white">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-blue-800 text-sm">Ready to Learn?</h3>
+                    <p className="text-blue-700 text-xs">Browse available tutors and book your next study session to get expert help.</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-blue-800 text-sm sm:text-base">Ready to Learn?</h3>
-                  <p className="text-blue-700 text-xs sm:text-sm">Browse available tutors and book your next study session to get expert help.</p>
-                </div>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 w-full sm:w-auto">
                   Find Tutors
                 </Button>
               </div>
@@ -163,38 +167,39 @@ const AspirantDashboard = () => {
           </Card>
         </motion.div>
 
-        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-blue-100 h-auto p-1 text-xs sm:text-sm">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">Overview</span>
-              <span className="sm:hidden">Home</span>
-            </TabsTrigger>
-            <TabsTrigger value="sessions" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              Sessions
-            </TabsTrigger>
-            <TabsTrigger value="wallet" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              Wallet
-            </TabsTrigger>
-            <TabsTrigger value="appeals" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              Appeals
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              Settings
-            </TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="overview" className="space-y-4">
+          <ScrollArea className="w-full">
+            <TabsList className="flex w-max min-w-full bg-blue-100 h-auto p-1 gap-1">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="sessions" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+                Sessions
+              </TabsTrigger>
+              <TabsTrigger value="wallet" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+                Wallet
+              </TabsTrigger>
+              <TabsTrigger value="appeals" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+                Appeals
+              </TabsTrigger>
+              <TabsTrigger value="profile" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+                Profile
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+                Settings
+              </TabsTrigger>
+            </TabsList>
+          </ScrollArea>
 
-          <TabsContent value="overview" className="space-y-4 sm:space-y-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          <TabsContent value="overview" className="space-y-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <Card className="border-blue-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Total Spent</CardTitle>
-                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
+                  <CardTitle className="text-xs font-medium">Total Spent</CardTitle>
+                  <DollarSign className="h-3 w-3 text-blue-600" />
                 </CardHeader>
-                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-lg sm:text-2xl font-bold text-blue-600">₦{totalSpent}</div>
+                <CardContent className="px-3 pb-3">
+                  <div className="text-lg font-bold text-blue-600">₦{totalSpent}</div>
                   <p className="text-xs text-muted-foreground">
                     On tutoring sessions
                   </p>
@@ -202,12 +207,12 @@ const AspirantDashboard = () => {
               </Card>
 
               <Card className="border-blue-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Sessions Attended</CardTitle>
-                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
+                  <CardTitle className="text-xs font-medium">Sessions Attended</CardTitle>
+                  <CheckCircle className="h-3 w-3 text-blue-600" />
                 </CardHeader>
-                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-lg sm:text-2xl font-bold text-blue-600">{completedSessions}</div>
+                <CardContent className="px-3 pb-3">
+                  <div className="text-lg font-bold text-blue-600">{completedSessions}</div>
                   <p className="text-xs text-muted-foreground">
                     Learning sessions
                   </p>
@@ -215,12 +220,12 @@ const AspirantDashboard = () => {
               </Card>
 
               <Card className="border-blue-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Upcoming Sessions</CardTitle>
-                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
+                  <CardTitle className="text-xs font-medium">Upcoming Sessions</CardTitle>
+                  <Calendar className="h-3 w-3 text-blue-600" />
                 </CardHeader>
-                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-lg sm:text-2xl font-bold text-blue-600">{upcomingSessions}</div>
+                <CardContent className="px-3 pb-3">
+                  <div className="text-lg font-bold text-blue-600">{upcomingSessions}</div>
                   <p className="text-xs text-muted-foreground">
                     This week
                   </p>
@@ -228,12 +233,12 @@ const AspirantDashboard = () => {
               </Card>
 
               <Card className="border-blue-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Wallet Balance</CardTitle>
-                  <Wallet className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
+                  <CardTitle className="text-xs font-medium">Wallet Balance</CardTitle>
+                  <Wallet className="h-3 w-3 text-blue-600" />
                 </CardHeader>
-                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-lg sm:text-2xl font-bold text-blue-600">₦{profile?.wallet_balance || 0}</div>
+                <CardContent className="px-3 pb-3">
+                  <div className="text-lg font-bold text-blue-600">₦{profile?.wallet_balance || 0}</div>
                   <p className="text-xs text-muted-foreground">
                     Available balance
                   </p>
@@ -304,23 +309,23 @@ const AspirantDashboard = () => {
               </CardHeader>
               <CardContent>
                 {sessions && sessions.length > 0 ? (
-                  <div className="space-y-3 sm:space-y-4">
+                  <div className="space-y-3">
                     {sessions.slice(0, 5).map((session) => (
-                      <div key={session.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border border-blue-200 rounded-lg gap-2">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                      <div key={session.id} className="flex flex-col gap-2 p-3 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <Users className="w-4 h-4 text-blue-600" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-sm sm:text-base truncate">{session.student?.name}</h4>
-                            <p className="text-xs sm:text-sm text-gray-600 truncate">
+                            <h4 className="font-semibold text-sm truncate">{session.student?.name}</h4>
+                            <p className="text-xs text-gray-600 truncate">
                               {new Date(session.scheduled_at).toLocaleDateString()} • {session.duration} minutes
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
-                          <span className="font-semibold text-blue-600 text-sm sm:text-base">₦{session.amount}</span>
-                          <Badge className={`text-xs ${
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-blue-600 text-sm">₦{session.amount}</span>
+                          <Badge className={`text-xs px-2 py-1 ${
                             session.status === 'completed' ? 'bg-green-100 text-green-800' :
                             session.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
                             'bg-yellow-100 text-yellow-800'
@@ -332,10 +337,10 @@ const AspirantDashboard = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-6 sm:py-8">
-                    <Calendar className="w-8 h-8 sm:w-12 sm:h-12 text-blue-400 mx-auto mb-4" />
-                    <h3 className="text-base sm:text-lg font-semibold mb-2">No sessions yet</h3>
-                    <p className="text-sm sm:text-base text-gray-600">Book your first tutoring session to get started</p>
+                  <div className="text-center py-6">
+                    <Calendar className="w-8 h-8 text-blue-400 mx-auto mb-4" />
+                    <h3 className="text-base font-semibold mb-2">No sessions yet</h3>
+                    <p className="text-sm text-gray-600">Book your first tutoring session to get started</p>
                   </div>
                 )}
               </CardContent>

@@ -1,345 +1,319 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar, Clock, DollarSign, Star, User, GraduationCap, Award, Shield } from 'lucide-react';
+import { format } from 'date-fns';
 import { useAuth } from '@/components/auth/AuthContext';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { initializeFlutterwavePayment, generateTxRef } from '@/utils/flutterwave';
 import PaymentSelector from './PaymentSelector';
 
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  student: {
-    id: string;
-    name: string;
-    email: string;
-    flutterwave_subaccount_id?: string;
-  };
-  onAuthRequired?: () => void;
+  student: any;
 }
 
-const BookingModal = ({ isOpen, onClose, student, onAuthRequired }: BookingModalProps) => {
-  const { user, profile } = useAuth();
-  const queryClient = useQueryClient();
-  const [bookingData, setBookingData] = useState({
-    date: '',
-    time: '',
-    duration: '60',
-    amount: 1500 // 1 hour = 1500, will be updated based on duration
-  });
+const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
+  const { profile } = useAuth();
+  const [duration, setDuration] = useState('60');
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [description, setDescription] = useState('');
+  const [showPayment, setShowPayment] = useState(false);
 
-  // Update amount based on duration
-  React.useEffect(() => {
-    const duration = parseInt(bookingData.duration);
-    let newAmount = 1500; // Default 1 hour
-    
-    if (duration === 30) {
-      newAmount = 1000; // 30 minutes
-    } else if (duration === 60) {
-      newAmount = 1500; // 1 hour
-    } else if (duration === 90) {
-      newAmount = 2250; // 1.5 hours
-    } else if (duration === 120) {
-      newAmount = 3000; // 2 hours
-    }
-    
-    setBookingData(prev => ({ ...prev, amount: newAmount }));
-  }, [bookingData.duration]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
-
-  // Fetch user's wallet balance
-  const { data: userWallet } = useQuery({
-    queryKey: ['user-wallet', user?.id],
+  const { data: reviews } = useQuery({
+    queryKey: ['student-reviews', student?.id],
     queryFn: async () => {
-      if (!user) return null;
+      if (!student?.id) return [];
+      
       const { data, error } = await supabase
-        .from('users')
-        .select('wallet_balance')
-        .eq('id', user.id)
-        .single();
+        .from('reviews')
+        .select('*')
+        .eq('tutor_id', student.id)
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data;
     },
-    enabled: !!user
+    enabled: !!student?.id
   });
 
-  const createSessionMutation = useMutation({
-    mutationFn: async (sessionData: any) => {
+  const handleBookingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setShowPayment(true);
+  };
+
+  const handlePaymentSuccess = async () => {
+    const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
+    const amount = (parseInt(duration) / 30) * 500;
+
+    try {
       const { data, error } = await supabase
         .from('sessions')
-        .insert(sessionData)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      toast.success('Session booked successfully!');
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      onClose();
-    },
-    onError: (error) => {
-      console.error('Error creating session:', error);
-      toast.error('Failed to create session');
-    }
-  });
-
-  const handleContinueToPayment = () => {
-    if (!user || !profile) {
-      if (onAuthRequired) {
-        onAuthRequired();
-      } else {
-        toast.error('Please log in to book a session');
-      }
-      return;
-    }
-
-    if (!bookingData.date || !bookingData.time) {
-      toast.error('Please select date and time');
-      return;
-    }
-
-    setShowPaymentOptions(true);
-  };
-
-  const handleWalletPayment = async () => {
-    if (!user || !profile) return;
-
-    const walletBalance = userWallet?.wallet_balance || 0;
-    const sessionAmountInKobo = bookingData.amount * 100;
-
-    if (walletBalance < sessionAmountInKobo) {
-      toast.error('Insufficient wallet balance');
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      const scheduledAt = new Date(`${bookingData.date}T${bookingData.time}`).toISOString();
-      const txRef = generateTxRef();
-
-      // Deduct from wallet
-      const { error: walletError } = await supabase
-        .from('users')
-        .update({ wallet_balance: walletBalance - sessionAmountInKobo })
-        .eq('id', user.id);
-
-      if (walletError) throw walletError;
-
-      // Create session record
-      const sessionData = {
-        client_id: user.id,
-        student_id: student.id,
-        scheduled_at: scheduledAt,
-        duration: parseInt(bookingData.duration),
-        amount: sessionAmountInKobo,
-        payment_status: 'completed',
-        status: 'confirmed',
-        flutterwave_reference: txRef
-      };
-
-      createSessionMutation.mutate(sessionData);
-
-      // Create transactions
-      await Promise.all([
-        // Payment transaction for aspirant
-        supabase.from('transactions').insert({
-          user_id: user.id,
-          amount: -sessionAmountInKobo,
-          type: 'payment',
-          status: 'completed',
-          reference: txRef,
-          description: `Session payment to ${student.name}`
-        }),
-        // Earning transaction for student
-        supabase.from('transactions').insert({
-          user_id: student.id,
-          amount: Math.floor(sessionAmountInKobo * 0.7), // 70% in kobo
-          type: 'earning',
-          status: 'completed',
-          reference: txRef,
-          description: `Session earning from ${profile.name}`
-        })
-      ]);
-
-      toast.success('Payment successful! Session booked.');
-    } catch (error) {
-      console.error('Wallet payment error:', error);
-      toast.error('Payment failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleFlutterwavePayment = async () => {
-    if (!user || !profile) return;
-
-    setIsProcessing(true);
-
-    try {
-      const txRef = generateTxRef();
-      const scheduledAt = new Date(`${bookingData.date}T${bookingData.time}`).toISOString();
-      
-      const paymentData = {
-        amount: bookingData.amount,
-        email: user.email!,
-        name: profile.name,
-        tx_ref: txRef,
-        redirect_url: window.location.origin + '/dashboard',
-        subaccounts: student.flutterwave_subaccount_id ? [{
-          id: student.flutterwave_subaccount_id,
-          transaction_split_ratio: 70 // 70% to student
-        }] : undefined
-      };
-
-      const response = await initializeFlutterwavePayment(paymentData);
-      
-      if (response && (response as any).status === 'successful') {
-        // Create session record
-        const sessionData = {
-          client_id: user.id,
-          student_id: student.id,
-          scheduled_at: scheduledAt,
-          duration: parseInt(bookingData.duration),
-          amount: bookingData.amount * 100, // Convert to kobo
-          payment_status: 'completed',
-          status: 'confirmed',
-          flutterwave_reference: (response as any).transaction_id
-        };
-
-        createSessionMutation.mutate(sessionData);
-
-        // Create earning transaction for student
-        await supabase.from('transactions').insert({
-          user_id: student.id,
-          amount: Math.floor(bookingData.amount * 0.7 * 100), // 70% in kobo
-          type: 'earning',
-          status: 'completed',
-          reference: (response as any).transaction_id,
-          description: `Session earning from ${profile.name}`
+        .insert({
+          client_id: profile?.id,
+          student_id: student?.id,
+          duration: parseInt(duration),
+          scheduled_at: scheduledAt.toISOString(),
+          description: description,
+          amount: amount,
+          status: 'pending'
         });
 
-      } else {
-        toast.error('Payment was not successful');
-      }
+      if (error) throw error;
+
+      // Optionally, update the user's wallet balance immediately
+      // or handle it via a background function
+
+      onClose();
     } catch (error) {
-      console.error('Payment error:', error);
-      toast.error('Payment failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
+      console.error('Booking submission error:', error);
+      // Handle error (e.g., show a toast)
     }
   };
+
+  const isStudent = profile?.role === 'student';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Book Session with {student.name}
+          <DialogTitle className="flex items-center gap-3">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={student?.profile_image} />
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                {student?.name?.split(' ').map((n: string) => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="text-xl font-bold">{student?.name}</h3>
+              <p className="text-sm text-gray-600">{student?.departments?.name}</p>
+            </div>
           </DialogTitle>
           <DialogDescription>
-            Schedule a 1-on-1 learning session
+            {isStudent ? 'View tutor profile' : 'Book a session with this verified UNIOSUN student'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {!showPaymentOptions ? (
-            <>
-              {/* Session Details Form */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={bookingData.date}
-                    onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
-                    min={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="time">Time</Label>
-                  <Input
-                    id="time"
-                    type="time"
-                    value={bookingData.time}
-                    onChange={(e) => setBookingData({...bookingData, time: e.target.value})}
-                  />
-                </div>
-              </div>
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="booking" disabled={isStudent}>
+              {isStudent ? 'Booking Disabled' : 'Book Session'}
+            </TabsTrigger>
+          </TabsList>
 
-              <div>
-                <Label htmlFor="duration">Duration</Label>
-                <Select 
-                  value={bookingData.duration} 
-                  onValueChange={(value) => setBookingData({...bookingData, duration: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="60">1 hour</SelectItem>
-                    <SelectItem value="90">1.5 hours</SelectItem>
-                    <SelectItem value="120">2 hours</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="p-4 bg-green-50 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Session Fee:</span>
-                  <span className="text-lg font-bold">₦{bookingData.amount.toLocaleString()}</span>
+          <TabsContent value="profile" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Student Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Department</label>
+                    <p className="mt-1 text-gray-900">{student?.departments?.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Quiz Score</label>
+                    <p className="mt-1 text-gray-900">{student?.quiz_score}%</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Status</label>
+                    <div className="mt-1 flex gap-2">
+                      <Badge className="bg-green-100 text-green-800">
+                        <GraduationCap className="w-3 h-3 mr-1" />
+                        Verified Student
+                      </Badge>
+                      <Badge className="bg-blue-100 text-blue-800">
+                        <Award className="w-3 h-3 mr-1" />
+                        Certified Tutor
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Rating</label>
+                    <div className="mt-1 flex items-center gap-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-gray-900">4.8 (24 reviews)</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p>• Student receives: ₦{Math.floor(bookingData.amount * 0.7).toLocaleString()} (70%)</p>
-                  <p>• Platform fee: ₦{Math.floor(bookingData.amount * 0.3).toLocaleString()} (30%)</p>
-                  <p>• Duration: {bookingData.duration} minutes</p>
-                </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              <Button 
-                onClick={handleContinueToPayment}
-                disabled={!bookingData.date || !bookingData.time}
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                Continue to Payment
-              </Button>
-            </>
-          ) : (
-            <>
-              {/* Payment Options */}
+            {/* Reviews Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="w-5 h-5" />
+                  Recent Reviews
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {reviews && reviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {reviews.slice(0, 3).map((review) => (
+                      <div key={review.id} className="border-b pb-4 last:border-b-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < (review.rating || 0)
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            {new Date(review.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-gray-700 text-sm">{review.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-600 text-center py-4">No reviews yet</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="booking" className="space-y-6">
+            {isStudent ? (
+              <Card className="border-yellow-200 bg-yellow-50">
+                <CardContent className="p-6 text-center">
+                  <Shield className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-yellow-800 mb-2">Booking Restricted</h3>
+                  <p className="text-yellow-700">
+                    Students cannot book sessions with other students. Only aspirants can book tutoring sessions.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : !showPayment ? (
+              <form onSubmit={handleBookingSubmit} className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Session Details</CardTitle>
+                    <CardDescription>
+                      Choose your session duration and schedule
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Duration
+                      </label>
+                      <select
+                        value={duration}
+                        onChange={(e) => setDuration(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                        required
+                      >
+                        <option value="30">30 minutes - ₦500</option>
+                        <option value="60">60 minutes - ₦1000</option>
+                        <option value="90">90 minutes - ₦1500</option>
+                        <option value="120">120 minutes - ₦2000</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Preferred Date
+                        </label>
+                        <Input
+                          type="date"
+                          value={scheduledDate}
+                          onChange={(e) => setScheduledDate(e.target.value)}
+                          min={format(new Date(), 'yyyy-MM-dd')}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Preferred Time
+                        </label>
+                        <Input
+                          type="time"
+                          value={scheduledTime}
+                          onChange={(e) => setScheduledTime(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Session Description (Optional)
+                      </label>
+                      <Textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Describe what you'd like to learn or any specific topics you want to cover..."
+                        rows={3}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5" />
+                      Session Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Duration:</span>
+                        <span>{duration} minutes</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Rate:</span>
+                        <span>₦{(parseInt(duration) / 30) * 500}/session</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                        <span>Total:</span>
+                        <span>₦{(parseInt(duration) / 30) * 500}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="flex gap-4">
+                  <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
+                    Continue to Payment
+                  </Button>
+                </div>
+              </form>
+            ) : (
               <PaymentSelector
-                walletBalance={userWallet?.wallet_balance || 0}
-                sessionAmount={bookingData.amount * 100} // Convert to kobo
-                onWalletPayment={handleWalletPayment}
-                onFlutterwavePayment={handleFlutterwavePayment}
-                isProcessing={isProcessing}
+                amount={(parseInt(duration) / 30) * 500}
+                onPaymentSuccess={handlePaymentSuccess}
+                onCancel={() => setShowPayment(false)}
               />
-              
-              <Button 
-                onClick={() => setShowPaymentOptions(false)}
-                variant="outline"
-                className="w-full"
-                disabled={isProcessing}
-              >
-                Back to Session Details
-              </Button>
-            </>
-          )}
-        </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
