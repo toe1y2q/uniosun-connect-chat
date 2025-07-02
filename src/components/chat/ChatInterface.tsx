@@ -53,6 +53,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [sessionStarted, setSessionStarted] = useState(false);
   const { isMessageAllowed } = useContentFilter();
 
   // Fetch session details
@@ -102,7 +103,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
     enabled: !!session
   });
 
-  // Calculate time left
+  // Calculate time left with proper session duration handling
   useEffect(() => {
     if (!session) return;
 
@@ -114,26 +115,34 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
       
       // If session hasn't started yet, show time until start
       if (now < sessionStart) {
-        setTimeLeft(Math.floor((sessionStart.getTime() - now.getTime()) / 1000));
+        const timeUntilStart = Math.floor((sessionStart.getTime() - now.getTime()) / 1000);
+        setTimeLeft(timeUntilStart);
+        setSessionStarted(false);
         return;
       }
       
-      // If session is ongoing, show remaining time
-      const remaining = Math.max(0, sessionEnd.getTime() - now.getTime());
+      // Mark session as started
+      if (!sessionStarted) {
+        setSessionStarted(true);
+      }
       
-      if (remaining === 0 && !sessionEnded) {
+      // If session is ongoing, show remaining time based on actual duration
+      const remaining = Math.max(0, sessionEnd.getTime() - now.getTime());
+      const remainingSeconds = Math.floor(remaining / 1000);
+      
+      if (remainingSeconds === 0 && !sessionEnded) {
         setSessionEnded(true);
         handleSessionEnd();
       }
       
-      setTimeLeft(Math.floor(remaining / 1000));
+      setTimeLeft(remainingSeconds);
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [session, sessionEnded]);
+  }, [session, sessionEnded, sessionStarted]);
 
   const handleSessionEnd = async () => {
     try {
@@ -226,10 +235,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Format time display
+  // Format time display with better handling
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
+    if (seconds <= 0) return "00:00";
+    
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -264,8 +281,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
                 <Clock className="w-4 h-4" />
                 {sessionEnded ? (
                   <Badge variant="destructive">Session Ended</Badge>
+                ) : !sessionStarted ? (
+                  <span className="text-yellow-600">Starts in: {formatTime(timeLeft)}</span>
                 ) : (
-                  <span>Time left: {formatTime(timeLeft)}</span>
+                  <span className="text-green-600">Time remaining: {formatTime(timeLeft)}</span>
                 )}
               </div>
             </div>
@@ -311,7 +330,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
       </div>
 
       {/* Message Input */}
-      {!sessionEnded && (
+      {!sessionEnded && sessionStarted && (
         <div className="bg-white border-t p-4">
           {replyingTo && (
             <div className="mb-2 p-2 bg-blue-50 border-l-4 border-blue-400 rounded">
@@ -356,6 +375,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
           <p className="text-xs text-gray-500 mt-1">
             Messages are filtered to ensure academic-focused discussions
           </p>
+        </div>
+      )}
+
+      {!sessionStarted && !sessionEnded && (
+        <div className="bg-white border-t p-4">
+          <div className="text-center py-4">
+            <Clock className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+            <p className="text-yellow-700 font-medium">Session hasn't started yet</p>
+            <p className="text-yellow-600 text-sm">
+              Chat will be available when the scheduled time begins
+            </p>
+          </div>
         </div>
       )}
     </div>
