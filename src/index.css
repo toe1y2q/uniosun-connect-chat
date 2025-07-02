@@ -171,4 +171,14 @@ html {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Auto-scrolling tabs - smooth scroll behavior */
+  .overflow-x-auto {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus-within for better tab navigation */
+  .overflow-x-auto:focus-within {
+    scroll-behavior: smooth;
+  }
 }

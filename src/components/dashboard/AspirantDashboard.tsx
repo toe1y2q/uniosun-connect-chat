@@ -159,7 +159,10 @@ const AspirantDashboard = () => {
                     <p className="text-green-700 text-xs">Browse available tutors and book your next study session to get expert help.</p>
                   </div>
                 </div>
-                <Button className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-2 w-full sm:w-auto">
+                <Button 
+                  onClick={() => window.location.href = '/talents'}
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-2 w-full sm:w-auto"
+                >
                   Find Tutors
                 </Button>
               </div>
@@ -278,10 +281,10 @@ const AspirantDashboard = () => {
                             <span className="text-green-600">
                               {talent.quiz_score ? `${talent.quiz_score}% Quiz` : 'Verified'}
                             </span>
-                            <div className="flex items-center gap-1">
-                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                              <span>4.8</span>
-                            </div>
+                           <div className="flex items-center gap-1">
+                             <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                             <span>N/A</span>
+                           </div>
                           </div>
                         </CardContent>
                       </Card>

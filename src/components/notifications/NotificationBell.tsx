@@ -132,6 +132,18 @@ const NotificationBell = () => {
     return `${diffInDays}d ago`;
   };
 
+  const handleNotificationClick = (notification: any) => {
+    if (notification.type === 'session' && notification.message.includes('Please submit your review')) {
+      // Extract session ID from notification ID
+      const sessionId = notification.id.replace('session-completed-', '');
+      window.location.href = `/chat/${sessionId}`;
+    } else if (notification.type === 'session') {
+      window.location.href = '/dashboard';
+    } else if (notification.type === 'payment') {
+      window.location.href = '/dashboard';
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -161,32 +173,36 @@ const NotificationBell = () => {
               {notifications.slice(0, 10).map((notification) => {
                 const IconComponent = notification.icon;
                 return (
-                  <div key={notification.id} className="p-3 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-full ${
-                        notification.type === 'payment' ? 'bg-green-100' :
-                        notification.type === 'session' ? 'bg-blue-100' :
-                        'bg-yellow-100'
-                      }`}>
-                        <IconComponent className={`w-4 h-4 ${
-                          notification.type === 'payment' ? 'text-green-600' :
-                          notification.type === 'session' ? 'text-blue-600' :
-                          'text-yellow-600'
-                        }`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900 mb-1">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {getTimeAgo(notification.time)}
-                        </p>
-                      </div>
-                      {notification.unread && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                      )}
-                    </div>
-                  </div>
+                   <div 
+                     key={notification.id} 
+                     className="p-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                     onClick={() => handleNotificationClick(notification)}
+                   >
+                     <div className="flex items-start gap-3">
+                       <div className={`p-2 rounded-full ${
+                         notification.type === 'payment' ? 'bg-green-100' :
+                         notification.type === 'session' ? 'bg-blue-100' :
+                         'bg-yellow-100'
+                       }`}>
+                         <IconComponent className={`w-4 h-4 ${
+                           notification.type === 'payment' ? 'text-green-600' :
+                           notification.type === 'session' ? 'text-blue-600' :
+                           'text-yellow-600'
+                         }`} />
+                       </div>
+                       <div className="flex-1 min-w-0">
+                         <p className="text-sm text-gray-900 mb-1">
+                           {notification.message}
+                         </p>
+                         <p className="text-xs text-gray-500">
+                           {getTimeAgo(notification.time)}
+                         </p>
+                       </div>
+                       {notification.unread && (
+                         <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                       )}
+                     </div>
+                   </div>
                 );
               })}
             </div>

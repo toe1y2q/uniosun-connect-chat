@@ -12,7 +12,10 @@ import { format } from 'date-fns';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import PaymentSelector from './PaymentSelector';
+import CongratulationsPage from './CongratulationsPage';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -22,11 +25,15 @@ interface BookingModalProps {
 
 const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [duration, setDuration] = useState('60');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [description, setDescription] = useState('');
   const [showPayment, setShowPayment] = useState(false);
+  const [showCongratulations, setShowCongratulations] = useState(false);
+  const [sessionData, setSessionData] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const { data: reviews } = useQuery({
     queryKey: ['student-reviews', student?.id],
@@ -61,12 +68,16 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
     return 100000; // Default to ₦1,000
   };
 
-  const handlePaymentSuccess = async () => {
-    const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
-    const amount = getSessionAmount();
-
+  const handleWalletPayment = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    
     try {
-      const { data, error } = await supabase
+      const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
+      const amount = getSessionAmount();
+
+      // Create session
+      const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .insert({
           client_id: profile?.id,
@@ -76,18 +87,138 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
           description: description,
           amount: amount,
           status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      // Create payment transaction
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: profile?.id,
+          type: 'payment',
+          amount: amount,
+          session_id: session.id,
+          status: 'completed',
+          description: `Session payment to ${student.name}`
         });
 
-      if (error) throw error;
+      if (transactionError) throw transactionError;
 
-      // Optionally, update the user's wallet balance immediately
-      // or handle it via a background function
+      // Update user's wallet balance
+      const { error: walletError } = await supabase
+        .from('users')
+        .update({ 
+          wallet_balance: (profile?.wallet_balance || 0) - amount 
+        })
+        .eq('id', profile?.id);
 
-      onClose();
+      if (walletError) throw walletError;
+
+      setSessionData({ ...session, student });
+      setShowCongratulations(true);
+      toast.success('Payment successful! Session booked.');
     } catch (error) {
-      console.error('Booking submission error:', error);
-      // Handle error (e.g., show a toast)
+      console.error('Wallet payment error:', error);
+      toast.error('Payment failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
     }
+  };
+
+  const handleFlutterwavePayment = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    
+    try {
+      const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
+      const amount = getSessionAmount();
+
+      // Create session
+      const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({
+          client_id: profile?.id,
+          student_id: student?.id,
+          duration: parseInt(duration),
+          scheduled_at: scheduledAt.toISOString(),
+          description: description,
+          amount: amount,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      // Create payment transaction
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: profile?.id,
+          type: 'payment',
+          amount: amount,
+          session_id: session.id,
+          status: 'completed',
+          description: `Session payment to ${student.name}`,
+          reference: `FLW_${Date.now()}`
+        });
+
+      if (transactionError) throw transactionError;
+
+      setSessionData({ ...session, student });
+      setShowCongratulations(true);
+      toast.success('Payment successful! Session booked.');
+    } catch (error) {
+      console.error('Flutterwave payment error:', error);
+      toast.error('Payment failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleProceedToChat = () => {
+    if (sessionData) {
+      navigate(`/chat/${sessionData.id}`);
+      onClose();
+    }
+  };
+
+  const handleGenerateReceipt = () => {
+    const receiptData = {
+      sessionId: sessionData.id,
+      studentName: sessionData.student.name,
+      duration: sessionData.duration,
+      amount: sessionData.amount,
+      date: new Date(sessionData.scheduled_at),
+      aspirantName: profile?.name
+    };
+    
+    const receipt = `
+HIREVENO TUTORING RECEIPT
+========================
+Session ID: ${receiptData.sessionId}
+Tutor: ${receiptData.studentName}
+Student: ${receiptData.aspirantName}
+Duration: ${receiptData.duration} minutes
+Amount: ₦${(receiptData.amount / 100).toLocaleString()}
+Date: ${receiptData.date.toLocaleDateString()}
+Time: ${receiptData.date.toLocaleTimeString()}
+========================
+Thank you for choosing Hireveno!
+    `;
+    
+    const blob = new Blob([receipt], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hireveno-receipt-${receiptData.sessionId}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const isStudent = profile?.role === 'student';
@@ -152,13 +283,18 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
                       </Badge>
                     </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Rating</label>
-                    <div className="mt-1 flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-gray-900">4.8 (24 reviews)</span>
-                    </div>
-                  </div>
+                   <div>
+                     <label className="text-sm font-medium text-gray-700">Rating</label>
+                     <div className="mt-1 flex items-center gap-1">
+                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                       <span className="text-gray-900">
+                         {reviews && reviews.length > 0 
+                           ? `${(reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)} (${reviews.length} reviews)`
+                           : 'No reviews yet'
+                         }
+                       </span>
+                     </div>
+                   </div>
                 </div>
               </CardContent>
             </Card>
@@ -315,13 +451,20 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
                   </Button>
                 </div>
               </form>
+            ) : showCongratulations ? (
+              <CongratulationsPage
+                sessionData={sessionData}
+                onProceedToChat={handleProceedToChat}
+                onGenerateReceipt={handleGenerateReceipt}
+                onClose={onClose}
+              />
             ) : (
               <PaymentSelector
                 walletBalance={profile?.wallet_balance || 0}
                 sessionAmount={getSessionAmount()}
-                onWalletPayment={handlePaymentSuccess}
-                onFlutterwavePayment={handlePaymentSuccess}
-                isProcessing={false}
+                onWalletPayment={handleWalletPayment}
+                onFlutterwavePayment={handleFlutterwavePayment}
+                isProcessing={isProcessing}
               />
             )}
           </TabsContent>
