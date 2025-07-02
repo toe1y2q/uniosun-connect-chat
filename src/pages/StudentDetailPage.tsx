@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -169,20 +168,18 @@ const StudentDetailPage = () => {
               </div>
               <div className="flex items-center justify-center gap-1">
                 <p className="text-2xl md:text-3xl font-bold text-green-600">
-                  {averageRating > 0 ? averageRating.toFixed(1) : 'New'}
+                  {averageRating.toFixed(1)}
                 </p>
-                {averageRating > 0 && (
-                  <div className="flex">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`w-4 h-4 ${
-                          star <= averageRating ? 'text-yellow-500 fill-current' : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                )}
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`w-4 h-4 ${
+                        star <= averageRating ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
               <p className="text-xs text-gray-500 mt-1">({reviews?.length || 0} reviews)</p>
             </CardContent>
