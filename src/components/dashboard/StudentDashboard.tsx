@@ -24,6 +24,8 @@ const StudentDashboard = () => {
   const { data: allSessions } = useQuery({
     queryKey: ['student-sessions', profile?.id],
     queryFn: async () => {
+      if (!profile?.id) return [];
+      
       const { data, error } = await supabase
         .from('sessions')
         .select(`
@@ -31,11 +33,11 @@ const StudentDashboard = () => {
           client:users!sessions_client_id_fkey (id, name, profile_image),
           student:users!sessions_student_id_fkey (id, name, profile_image)
         `)
-        .eq('student_id', profile?.id)
+        .eq('student_id', profile.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!profile?.id
   });
@@ -44,6 +46,8 @@ const StudentDashboard = () => {
   const { data: activeSessions } = useQuery({
     queryKey: ['student-active-sessions', profile?.id],
     queryFn: async () => {
+      if (!profile?.id) return [];
+      
       const { data, error } = await supabase
         .from('sessions')
         .select(`
@@ -51,12 +55,12 @@ const StudentDashboard = () => {
           client:users!sessions_client_id_fkey (id, name, profile_image),
           student:users!sessions_student_id_fkey (id, name, profile_image)
         `)
-        .eq('student_id', profile?.id)
+        .eq('student_id', profile.id)
         .eq('status', 'confirmed')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!profile?.id
   });
@@ -65,14 +69,16 @@ const StudentDashboard = () => {
   const { data: reviews } = useQuery({
     queryKey: ['student-reviews', profile?.id],
     queryFn: async () => {
+      if (!profile?.id) return [];
+      
       const { data, error } = await supabase
         .from('reviews')
         .select('*')
-        .eq('tutor_id', profile?.id)
+        .eq('tutor_id', profile.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!profile?.id
   });
@@ -81,10 +87,12 @@ const StudentDashboard = () => {
   const { data: earnings } = useQuery({
     queryKey: ['student-earnings', profile?.id],
     queryFn: async () => {
+      if (!profile?.id) return null;
+      
       const { data, error } = await supabase
         .from('wallets')
         .select('balance')
-        .eq('user_id', profile?.id)
+        .eq('user_id', profile.id)
         .single();
       
       if (error) throw error;
@@ -293,12 +301,7 @@ const StudentDashboard = () => {
                   <div className="text-center py-8">
                     <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">No recent sessions</p>
-                    <Button 
-                      onClick={() => navigate('/talents')}
-                      className="mt-4 bg-green-600 hover:bg-green-700"
-                    >
-                      Book Your First Session
-                    </Button>
+                    <p className="text-sm text-gray-500 mt-2">Students provide tutoring services to aspirants</p>
                   </div>
                 )}
               </CardContent>
