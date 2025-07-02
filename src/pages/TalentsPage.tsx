@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,6 +42,33 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
     }
   });
 
+  // Fetch reviews for each talent to calculate real ratings
+  const { data: talentReviews } = useQuery({
+    queryKey: ['talent-reviews'],
+    queryFn: async () => {
+      if (!talents) return {};
+      
+      const reviewsMap: { [key: string]: any[] } = {};
+      
+      for (const talent of talents) {
+        const { data, error } = await supabase
+          .from('reviews')
+          .select(`
+            *,
+            sessions!inner(student_id)
+          `)
+          .eq('sessions.student_id', talent.id);
+        
+        if (!error) {
+          reviewsMap[talent.id] = data || [];
+        }
+      }
+      
+      return reviewsMap;
+    },
+    enabled: !!talents
+  });
+
   const filteredTalents = talents?.filter(talent =>
     talent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     talent.departments?.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -53,6 +81,12 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
 
   const handleGoBack = () => {
     navigate(-1);
+  };
+
+  const getTalentRating = (talentId: string) => {
+    const reviews = talentReviews?.[talentId] || [];
+    if (reviews.length === 0) return 0;
+    return reviews.reduce((sum, review) => sum + (review.rating || 0), 0) / reviews.length;
   };
 
   if (isLoading) {
@@ -111,70 +145,90 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
 
         {/* Talents Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTalents?.map((talent, index) => (
-            <motion.div
-              key={talent.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="border-green-200 hover:shadow-lg transition-all duration-300 hover:border-green-300">
-                <CardHeader className="text-center pb-4">
-                  <div className="flex justify-center mb-4">
-                    <Avatar className="w-20 h-20 border-4 border-green-200">
-                      <AvatarImage src={talent.profile_image} />
-                      <AvatarFallback className="bg-green-100 text-green-600 text-xl">
-                        {talent.name.split(' ').map((n: string) => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <CardTitle className="text-xl text-gray-900">{talent.name}</CardTitle>
-                  <CardDescription className="flex items-center justify-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    {talent.departments?.name || 'General Studies'}
-                  </CardDescription>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Star className="w-4 h-4 text-yellow-500" />
-                        <span className="font-semibold">Quiz Score</span>
-                      </div>
-                      <p className="text-2xl font-bold text-green-600">{talent.quiz_score || 0}%</p>
+          {filteredTalents?.map((talent, index) => {
+            const averageRating = getTalentRating(talent.id);
+            const reviewCount = talentReviews?.[talent.id]?.length || 0;
+            
+            return (
+              <motion.div
+                key={talent.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className="border-green-200 hover:shadow-lg transition-all duration-300 hover:border-green-300">
+                  <CardHeader className="text-center pb-4">
+                    <div className="flex justify-center mb-4">
+                      <Avatar className="w-20 h-20 border-4 border-green-200">
+                        <AvatarImage src={talent.profile_image} />
+                        <AvatarFallback className="bg-green-100 text-green-600 text-xl">
+                          {talent.name.split(' ').map((n: string) => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
-                    <div>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <GraduationCap className="w-4 h-4 text-green-600" />
-                        <span className="font-semibold">Verified</span>
+                    <CardTitle className="text-xl text-gray-900">{talent.name}</CardTitle>
+                    <CardDescription className="flex items-center justify-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      {talent.departments?.name || 'General Studies'}
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Star className="w-4 h-4 text-yellow-500" />
+                          <span className="font-semibold">Quiz Score</span>
+                        </div>
+                        <p className="text-2xl font-bold text-green-600">{talent.quiz_score || 0}%</p>
                       </div>
-                      <Badge className="bg-green-100 text-green-800">
-                        Talent
-                      </Badge>
+                      <div>
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Star className="w-4 h-4 text-yellow-500" />
+                          <span className="font-semibold">Rating</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-1">
+                          <p className="text-xl font-bold text-green-600">
+                            {averageRating > 0 ? averageRating.toFixed(1) : 'New'}
+                          </p>
+                          {averageRating > 0 && (
+                            <div className="flex">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-3 h-3 ${
+                                    star <= averageRating ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">({reviewCount} reviews)</p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Button
-                      onClick={() => navigate(`/student/${talent.id}`)}
-                      variant="outline"
-                      className="w-full border-green-200 text-green-600 hover:bg-green-50"
-                    >
-                      View Profile
-                    </Button>
-                    <Button
-                      onClick={() => handleBookSession(talent)}
-                      className="w-full bg-green-600 hover:bg-green-700"
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Book Session
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                    <div className="space-y-2">
+                      <Button
+                        onClick={() => navigate(`/student/${talent.id}`)}
+                        variant="outline"
+                        className="w-full border-green-200 text-green-600 hover:bg-green-50"
+                      >
+                        View Profile
+                      </Button>
+                      <Button
+                        onClick={() => handleBookSession(talent)}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Book Session
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Empty State */}

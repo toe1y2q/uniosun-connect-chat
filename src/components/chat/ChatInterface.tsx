@@ -58,6 +58,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [preventNavigation, setPreventNavigation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -120,8 +121,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
           completeMutation.mutate();
           
           // Force review for aspirant if not already submitted
-          if (profile?.role === 'aspirant' && !existingReview) {
+          if (profile?.role === 'aspirant' && !existingReview && !reviewSubmitted) {
             setShowReviewForm(true);
+            setPreventNavigation(true);
           }
         } else {
           setTimeRemaining(remaining);
@@ -130,7 +132,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
 
       return () => clearInterval(timer);
     }
-  }, [session, profile?.role, existingReview]);
+  }, [session, profile?.role, existingReview, reviewSubmitted]);
 
   // Complete session mutation
   const completeMutation = useMutation({
@@ -305,6 +307,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
       toast.success('Review submitted successfully! Payment will be released to the student.');
       setReviewSubmitted(true);
       setShowReviewForm(false);
+      setPreventNavigation(false);
       queryClient.invalidateQueries({ queryKey: ['review', sessionId] });
       
       // Small delay before navigation to show success message
@@ -339,9 +342,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
 
   // Block navigation if review is required but not submitted
   const handleBackNavigation = () => {
-    if (sessionExpired && profile?.role === 'aspirant' && !existingReview && !reviewSubmitted) {
+    if (preventNavigation || (sessionExpired && profile?.role === 'aspirant' && !existingReview && !reviewSubmitted)) {
       toast.error('Please submit your review before leaving. This is required to release payment to the student.');
       setShowReviewForm(true);
+      setPreventNavigation(true);
       return;
     }
     
@@ -351,6 +355,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
       navigate('/dashboard');
     }
   };
+
+  // Check on component mount if session is already completed and requires review
+  useEffect(() => {
+    if (session && session.status === 'completed' && profile?.role === 'aspirant' && !existingReview && !reviewSubmitted) {
+      setShowReviewForm(true);
+      setPreventNavigation(true);
+    }
+  }, [session, profile?.role, existingReview, reviewSubmitted]);
 
   useEffect(() => {
     scrollToBottom();
@@ -392,7 +404,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
 
   const otherUser = session.client?.id === user?.id ? session.student : session.client;
 
-  // Mandatory review form modal for aspirants
+  // Mandatory review form modal for aspirants - Show as overlay to prevent navigation
   if (showReviewForm && profile?.role === 'aspirant') {
     return (
       <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
@@ -400,7 +412,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
           <CardHeader>
             <CardTitle className="text-center text-red-600">Review Required</CardTitle>
             <p className="text-sm text-center text-gray-600 mt-2">
-              You must submit a review to release payment to the student. This is mandatory.
+              You must submit a review to release payment to the student. This is mandatory and required before leaving.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -474,7 +486,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
                 <Badge variant="outline" className="text-xs">
                   {session.duration} mins
                 </Badge>
-                <span>₦{(session.amount / 100).toLocaleString()}</span>
+                <span>₦{session.amount.toLocaleString()}</span>
                 {timeRemaining > 0 && (
                   <div className="flex items-center gap-1 text-orange-600">
                     <Clock className="w-3 h-3" />
@@ -651,7 +663,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
           <CardContent className="p-4 text-center">
             <p className="text-red-800 font-medium mb-2">Session ended - Review required to release payment</p>
             <Button 
-              onClick={() => setShowReviewForm(true)}
+              onClick={() => {
+                setShowReviewForm(true);
+                setPreventNavigation(true);
+              }}
               className="bg-red-600 hover:bg-red-700"
             >
               Submit Mandatory Review

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
   const [description, setDescription] = useState('');
   const [showPayment, setShowPayment] = useState(false);
 
+  // Fetch reviews for this student
   const { data: reviews } = useQuery({
     queryKey: ['student-reviews', student?.id],
     queryFn: async () => {
@@ -45,15 +47,22 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
       
       const { data, error } = await supabase
         .from('reviews')
-        .select('*')
-        .eq('tutor_id', student.id)
-        .order('created_at', { ascending: false });
+        .select(`
+          *,
+          sessions!inner(student_id)
+        `)
+        .eq('sessions.student_id', student.id);
       
       if (error) throw error;
       return data;
     },
     enabled: !!student?.id
   });
+
+  // Calculate average rating
+  const averageRating = reviews?.length 
+    ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) / reviews.length 
+    : 0;
 
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +71,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
 
   const handlePaymentSuccess = async () => {
     const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
-    const amount = (parseInt(duration) / 30) * 500;
+    const amount = (parseInt(duration) / 30) * 500; // Fixed pricing calculation
 
     try {
       const { data, error } = await supabase
@@ -73,7 +82,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
           duration: parseInt(duration),
           scheduled_at: scheduledAt.toISOString(),
           description: description,
-          amount: amount,
+          amount: amount, // Store amount in naira, not kobo
           status: 'pending'
         });
 
@@ -94,7 +103,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
           <DialogTitle className="flex items-center gap-3">
             <Avatar className="h-12 w-12">
               <AvatarImage src={student?.profile_image} />
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+              <AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white">
                 {student?.name?.split(' ').map((n: string) => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
@@ -141,7 +150,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
                         <GraduationCap className="w-3 h-3 mr-1" />
                         Verified Student
                       </Badge>
-                      <Badge className="bg-blue-100 text-blue-800">
+                      <Badge className="bg-green-100 text-green-800">
                         <Award className="w-3 h-3 mr-1" />
                         Certified Tutor
                       </Badge>
@@ -151,7 +160,10 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
                     <label className="text-sm font-medium text-gray-700">Rating</label>
                     <div className="mt-1 flex items-center gap-1">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-gray-900">4.8 (24 reviews)</span>
+                      <span className="text-gray-900">
+                        {averageRating > 0 ? averageRating.toFixed(1) : 'No ratings yet'} 
+                        ({reviews?.length || 0} reviews)
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -187,7 +199,9 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
                             {new Date(review.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="text-gray-700 text-sm">{review.comment}</p>
+                        {review.comment && (
+                          <p className="text-gray-700 text-sm">{review.comment}</p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -305,7 +319,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
                   <Button type="button" variant="outline" onClick={onClose} className="flex-1">
                     Cancel
                   </Button>
-                  <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700">
                     Continue to Payment
                   </Button>
                 </div>
