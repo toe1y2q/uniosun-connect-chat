@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,9 +9,14 @@ import { toast } from '@/hooks/use-toast';
 interface AvatarUploadProps {
   size?: 'sm' | 'md' | 'lg';
   showUploadButton?: boolean;
+  className?: string;
 }
 
-const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'lg', showUploadButton = true }) => {
+const AvatarUpload: React.FC<AvatarUploadProps> = ({ 
+  size = 'lg', 
+  showUploadButton = true, 
+  className = '' 
+}) => {
   const { user, profile, updateProfile } = useAuth();
   const [uploading, setUploading] = useState(false);
 
@@ -35,7 +39,6 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'lg', showUploadButt
 
       console.log('Uploading avatar to path:', filePath);
 
-      // Upload new avatar
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
@@ -48,14 +51,12 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'lg', showUploadButt
         throw uploadError;
       }
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
       console.log('Avatar uploaded successfully. Public URL:', urlData.publicUrl);
 
-      // Update user profile with new avatar URL
       await updateProfile({
         profile_image: urlData.publicUrl
       });
@@ -102,13 +103,13 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'lg', showUploadButt
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
+    <div className={`flex flex-col items-center space-y-4 ${className}`}>
       <div className="relative">
         <Avatar className={`${getSizeClasses()} border-4 border-green-200`}>
           <AvatarImage 
             src={profile?.profile_image} 
             alt={profile?.name || 'User avatar'}
-            key={profile?.profile_image} // Force re-render when URL changes
+            key={profile?.profile_image}
           />
           <AvatarFallback className="bg-green-100 text-green-600 text-xl">
             {profile?.name?.split(' ').map(n => n[0]).join('') || 'U'}

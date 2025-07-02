@@ -14,10 +14,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import PaymentSelector from './PaymentSelector';
 
+interface Student {
+  id: string;
+  name: string;
+  profile_image?: string;
+  quiz_score?: number;
+  departments?: {
+    name: string;
+  };
+}
+
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  student: any;
+  student: Student;
 }
 
 const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
@@ -69,13 +79,9 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
 
       if (error) throw error;
 
-      // Optionally, update the user's wallet balance immediately
-      // or handle it via a background function
-
       onClose();
     } catch (error) {
       console.error('Booking submission error:', error);
-      // Handle error (e.g., show a toast)
     }
   };
 
@@ -152,7 +158,6 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
               </CardContent>
             </Card>
 
-            {/* Reviews Section */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,7 +52,7 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
   };
 
   const handleGoBack = () => {
-    navigate(-1); // Go back to previous page
+    navigate(-1);
   };
 
   if (isLoading) {
@@ -137,7 +136,6 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
-                  {/* Stats */}
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
                       <div className="flex items-center justify-center gap-1 mb-1">
@@ -157,7 +155,6 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="space-y-2">
                     <Button
                       onClick={() => navigate(`/student/${talent.id}`)}
@@ -210,7 +207,6 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
             setShowBookingModal(false);
             setSelectedStudent(null);
           }}
-          onAuthRequired={onAuthRequired}
         />
       )}
     </div>
