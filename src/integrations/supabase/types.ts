@@ -16,6 +16,7 @@ export type Database = {
           id: string
           is_flagged: boolean | null
           message: string
+          replied_to: string | null
           sender_id: string
           session_id: string
         }
@@ -25,6 +26,7 @@ export type Database = {
           id?: string
           is_flagged?: boolean | null
           message: string
+          replied_to?: string | null
           sender_id: string
           session_id: string
         }
@@ -34,10 +36,18 @@ export type Database = {
           id?: string
           is_flagged?: boolean | null
           message?: string
+          replied_to?: string | null
           sender_id?: string
           session_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "chat_messages_replied_to_fkey"
+            columns: ["replied_to"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chat_messages_sender_id_fkey"
             columns: ["sender_id"]
