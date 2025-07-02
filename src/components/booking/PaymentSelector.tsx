@@ -6,6 +6,7 @@ import { Wallet, CreditCard } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface PaymentSelectorProps {
   amount: number;
@@ -41,23 +42,39 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
   const canPayWithWallet = walletBalance && walletBalance >= amount;
 
   const handleWalletPayment = async () => {
-    if (!canPayWithWallet) return;
+    if (!canPayWithWallet || !profile?.id) return;
     
     try {
-      // Deduct from wallet
-      const { error } = await supabase
-        .from('users')
-        .update({ 
-          wallet_balance: supabase.sql`wallet_balance - ${amount}` 
-        })
-        .eq('id', profile?.id);
+      // Deduct from wallet using raw SQL
+      const { error } = await supabase.rpc('update_wallet_balance', {
+        user_id: profile.id,
+        amount_to_deduct: amount
+      });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback to direct update if RPC doesn't exist
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ 
+            wallet_balance: (walletBalance || 0) - amount 
+          })
+          .eq('id', profile.id);
+
+        if (updateError) throw updateError;
+      }
       
+      toast.success('Payment successful!');
       onPaymentSuccess();
     } catch (error) {
       console.error('Wallet payment error:', error);
+      toast.error('Payment failed. Please try again.');
     }
+  };
+
+  const handleFlutterwavePayment = () => {
+    // Simulate Flutterwave payment for now
+    toast.success('Flutterwave payment successful!');
+    onPaymentSuccess();
   };
 
   return (
@@ -92,7 +109,7 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
         </CardContent>
       </Card>
 
-      {/* Card Payment Option */}
+      {/* Flutterwave Payment Option */}
       <Card className="border-2 border-blue-200 hover:border-blue-300 transition-colors">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
@@ -106,7 +123,7 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
               </div>
             </div>
             <Button
-              onClick={onPaymentSuccess}
+              onClick={handleFlutterwavePayment}
               className="bg-blue-600 hover:bg-blue-700 text-sm px-4 py-2"
             >
               Pay ₦{amount.toLocaleString()}

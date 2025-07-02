@@ -1,294 +1,207 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, GraduationCap, MessageCircle, AlertTriangle, TrendingUp, UserCheck, Shield, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import AdminModerationPanel from './AdminModerationPanel';
+import { Users, GraduationCap, DollarSign, AlertTriangle, Settings, CreditCard } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const tabsListRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll tabs function
-  const scrollToActiveTab = (tabValue: string) => {
-    if (!tabsListRef.current) return;
-    
-    const activeButton = tabsListRef.current.querySelector(`[data-value="${tabValue}"]`) as HTMLElement;
-    if (activeButton) {
-      const container = tabsListRef.current;
-      const containerRect = container.getBoundingClientRect();
-      const buttonRect = activeButton.getBoundingClientRect();
-      
-      // Check if button is outside the visible area
-      if (buttonRect.left < containerRect.left || buttonRect.right > containerRect.right) {
-        const scrollLeft = activeButton.offsetLeft - (container.clientWidth / 2) + (activeButton.clientWidth / 2);
-        container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
-      }
-    }
-  };
-
-  useEffect(() => {
-    scrollToActiveTab(activeTab);
-  }, [activeTab]);
-
-  // Fetch total users
-  const { data: totalUsers } = useQuery({
-    queryKey: ['admin-total-users'],
+  // Fetch dashboard statistics
+  const { data: stats } = useQuery({
+    queryKey: ['admin-stats'],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true });
-      
-      if (error) throw error;
-      return count || 0;
+      const [usersRes, sessionsRes, transactionsRes, appealsRes, withdrawalsRes] = await Promise.all([
+        supabase.from('users').select('id, role, status', { count: 'exact' }),
+        supabase.from('sessions').select('id, status, amount', { count: 'exact' }),
+        supabase.from('transactions').select('id, amount, type', { count: 'exact' }),
+        supabase.from('appeals').select('id, status', { count: 'exact' }),
+        supabase.from('withdrawals').select('id, status, amount', { count: 'exact' })
+      ]);
+
+      const totalRevenue = transactionsRes.data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+      const pendingWithdrawals = withdrawalsRes.data?.filter(w => w.status === 'requested').length || 0;
+      const pendingAppeals = appealsRes.data?.filter(a => a.status === 'pending').length || 0;
+
+      return {
+        totalUsers: usersRes.count || 0,
+        totalSessions: sessionsRes.count || 0,
+        totalRevenue,
+        pendingWithdrawals,
+        pendingAppeals,
+        activeStudents: usersRes.data?.filter(u => u.role === 'student' && u.status === 'active').length || 0,
+        activeAspirants: usersRes.data?.filter(u => u.role === 'aspirant' && u.status === 'active').length || 0
+      };
     }
   });
 
-  // Fetch verified students
-  const { data: verifiedStudents } = useQuery({
-    queryKey: ['admin-verified-students'],
+  // Fetch recent activities
+  const { data: recentSessions } = useQuery({
+    queryKey: ['recent-sessions'],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'student')
-        .eq('is_verified', true);
-      
-      if (error) throw error;
-      return count || 0;
-    }
-  });
-
-  // Fetch total sessions
-  const { data: totalSessions } = useQuery({
-    queryKey: ['admin-total-sessions'],
-    queryFn: async () => {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from('sessions')
-        .select('*', { count: 'exact', head: true });
-      
+        .select(`
+          id,
+          status,
+          amount,
+          scheduled_at,
+          created_at,
+          client:users!sessions_client_id_fkey(name, email),
+          student:users!sessions_student_id_fkey(name, email)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
       if (error) throw error;
-      return count || 0;
+      return data;
     }
   });
 
-  // Fetch flagged messages
-  const { data: flaggedMessages } = useQuery({
-    queryKey: ['admin-flagged-messages'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('chat_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_flagged', true);
-      
-      if (error) throw error;
-      return count || 0;
-    }
-  });
+  const StatCard = ({ title, value, icon: Icon, subtitle }: any) => (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage and monitor the UNIOSUN Tutoring Platform</p>
-        </motion.div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <Button variant="outline" className="flex items-center gap-2">
+          <Settings className="w-4 h-4" />
+          Settings
+        </Button>
+      </div>
 
-        {/* Quick Stats */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-        >
-          <Card className="border-green-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Users</p>
-                  <p className="text-2xl font-bold text-green-600">{totalUsers}</p>
-                </div>
-                <Users className="w-8 h-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+          <TabsTrigger value="appeals">Appeals</TabsTrigger>
+          <TabsTrigger value="settings">Live Settings</TabsTrigger>
+        </TabsList>
 
-          <Card className="border-green-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Verified Students</p>
-                  <p className="text-2xl font-bold text-green-600">{verifiedStudents}</p>
-                </div>
-                <UserCheck className="w-8 h-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-green-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Sessions</p>
-                  <p className="text-2xl font-bold text-green-600">{totalSessions}</p>
-                </div>
-                <MessageCircle className="w-8 h-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-red-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Flagged Messages</p>
-                  <p className="text-2xl font-bold text-red-600">{flaggedMessages}</p>
-                </div>
-                <AlertTriangle className="w-8 h-8 text-red-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="relative mb-6">
-            <TabsList 
-              ref={tabsListRef}
-              className="w-full justify-start overflow-x-auto scrollbar-hide bg-white border border-green-200 p-1 rounded-lg"
-              style={{ 
-                display: 'flex',
-                whiteSpace: 'nowrap',
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none'
-              }}
-            >
-              <TabsTrigger 
-                value="overview" 
-                data-value="overview"
-                className="flex-shrink-0 data-[state=active]:bg-green-100 data-[state=active]:text-green-800"
-              >
-                <TrendingUp className="w-4 h-4 mr-2" />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger 
-                value="users" 
-                data-value="users"
-                className="flex-shrink-0 data-[state=active]:bg-green-100 data-[state=active]:text-green-800"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Users
-              </TabsTrigger>
-              <TabsTrigger 
-                value="moderation" 
-                data-value="moderation"
-                className="flex-shrink-0 data-[state=active]:bg-green-100 data-[state=active]:text-green-800"
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Moderation
-              </TabsTrigger>
-              <TabsTrigger 
-                value="sessions" 
-                data-value="sessions"
-                className="flex-shrink-0 data-[state=active]:bg-green-100 data-[state=active]:text-green-800"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Sessions
-              </TabsTrigger>
-              <TabsTrigger 
-                value="settings" 
-                data-value="settings"
-                className="flex-shrink-0 data-[state=active]:bg-green-100 data-[state=active]:text-green-800"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </TabsTrigger>
-            </TabsList>
+        <TabsContent value="overview" className="space-y-4">
+          {/* Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Total Users"
+              value={stats?.totalUsers || 0}
+              icon={Users}
+              subtitle={`${stats?.activeStudents || 0} students, ${stats?.activeAspirants || 0} aspirants`}
+            />
+            <StatCard
+              title="Total Sessions"
+              value={stats?.totalSessions || 0}
+              icon={GraduationCap}
+            />
+            <StatCard
+              title="Total Revenue"
+              value={`₦${stats?.totalRevenue?.toLocaleString() || 0}`}
+              icon={DollarSign}
+            />
+            <StatCard
+              title="Pending Actions"
+              value={`${(stats?.pendingWithdrawals || 0) + (stats?.pendingAppeals || 0)}`}
+              icon={AlertTriangle}
+              subtitle={`${stats?.pendingWithdrawals || 0} withdrawals, ${stats?.pendingAppeals || 0} appeals`}
+            />
           </div>
 
-          <TabsContent value="overview" className="space-y-6">
-            <Card className="border-green-200">
-              <CardHeader>
-                <CardTitle>Platform Overview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold mb-2">User Statistics</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Total Users:</span>
-                        <span className="font-medium">{totalUsers}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Verified Students:</span>
-                        <span className="font-medium">{verifiedStudents}</span>
-                      </div>
+          {/* Recent Activities */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Sessions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentSessions?.map((session) => (
+                  <div key={session.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <p className="font-medium">
+                        {session.client?.name} → {session.student?.name}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {new Date(session.scheduled_at).toLocaleDateString()} • ₦{session.amount.toLocaleString()}
+                      </p>
                     </div>
+                    <Badge variant={
+                      session.status === 'completed' ? 'default' :
+                      session.status === 'confirmed' ? 'secondary' :
+                      session.status === 'cancelled' ? 'destructive' : 'outline'
+                    }>
+                      {session.status}
+                    </Badge>
                   </div>
-                  <div>
-                    <h4 className="font-semibold mb-2">Activity Statistics</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Total Sessions:</span>
-                        <span className="font-medium">{totalSessions}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Flagged Messages:</span>
-                        <span className="font-medium text-red-600">{flaggedMessages}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="users" className="space-y-6">
-            <Card className="border-green-200">
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">User management features will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">User management features coming soon...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="moderation">
-            <AdminModerationPanel />
-          </TabsContent>
+        <TabsContent value="withdrawals">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Withdrawal Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Withdrawal management features coming soon...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="sessions" className="space-y-6">
-            <Card className="border-green-200">
-              <CardHeader>
-                <CardTitle>Session Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Session management features will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+        <TabsContent value="appeals">
+          <Card>
+            <CardHeader>
+              <CardTitle>Appeals Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Appeals management features coming soon...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="settings" className="space-y-6">
-            <Card className="border-green-200">
-              <CardHeader>
-                <CardTitle>Platform Settings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Platform settings will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+        <TabsContent value="settings">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Live Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Live settings panel coming soon...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
