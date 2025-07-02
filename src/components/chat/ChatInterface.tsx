@@ -2,16 +2,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MessageSquare, Send, Star, Clock, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Send, Clock, X, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useContentFilter } from '@/hooks/useContentFilter';
+import MessageItem from './MessageItem';
 
 interface ChatInterfaceProps {
   sessionId: string;
@@ -24,6 +26,8 @@ interface Message {
   message: string;
   created_at: string;
   replied_to?: string;
+  is_flagged?: boolean;
+  is_flagged_content?: boolean;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
@@ -35,7 +39,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { isMessageAllowed } = useContentFilter();
 
   // Fetch session details
   const { data: session } = useQuery({
@@ -59,7 +65,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   // Fetch messages
   const { data: messages, refetch: refetchMessages } = useQuery({
     queryKey: ['messages', sessionId],
-    queryFn: async () => {
+    queryFun: async () => {
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -69,7 +75,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
       if (error) throw error;
       return data as Message[];
     },
-    refetchInterval: 3000 // Refresh every 3 seconds
+    refetchInterval: 3000
   });
 
   // Check if review exists for this session
@@ -114,15 +120,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
     };
   }, [sessionId, refetchMessages]);
 
-  // Session timer
+  // Session timer and management
   useEffect(() => {
     if (session && session.status === 'confirmed') {
-      const sessionDuration = session.duration * 60 * 1000; // Convert minutes to milliseconds
+      const sessionDuration = session.duration * 60 * 1000;
       const scheduledTime = new Date(session.scheduled_at).getTime();
       const now = Date.now();
       
-      // Check if session has started (within 5 minutes of scheduled time)
-      const sessionStartTime = scheduledTime - (5 * 60 * 1000); // 5 minutes before
+      const sessionStartTime = scheduledTime - (5 * 60 * 1000);
       const sessionEndTime = scheduledTime + sessionDuration;
       
       if (now >= sessionStartTime && now <= sessionEndTime) {
@@ -134,8 +139,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
           const remaining = sessionEndTime - Date.now();
           if (remaining <= 0) {
             setTimeLeft(0);
+            setSessionEnded(true);
             clearInterval(timer);
-            toast.info('Session time has ended');
+            
+            // Auto-redirect aspirant to rating page if no review exists
+            if (profile?.role === 'aspirant' && !existingReview) {
+              toast.info('Session ended. Please rate your experience.');
+              setTimeout(() => {
+                navigate(`/review/${sessionId}`);
+              }, 2000);
+            }
           } else {
             setTimeLeft(remaining);
           }
@@ -143,7 +156,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
         
         return () => clearInterval(timer);
       } else if (now < sessionStartTime) {
-        // Session hasn't started yet
         const timeUntilStart = sessionStartTime - now;
         setTimeLeft(timeUntilStart);
         
@@ -160,7 +172,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
         return () => clearInterval(timer);
       }
     }
-  }, [session]);
+  }, [session, sessionId, navigate, profile?.role, existingReview]);
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -170,6 +182,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || isLoading) return;
+
+    // Content filtering
+    const filterResult = isMessageAllowed(newMessage);
+    if (!filterResult.allowed) {
+      toast.error(filterResult.reason);
+      return;
+    }
+
+    // Check if session has ended
+    if (sessionEnded) {
+      toast.error('Session has ended. You cannot send messages.');
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -196,13 +221,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   };
 
   const handleCloseChat = () => {
-    // Check if user is aspirant and hasn't reviewed yet
-    if (profile?.role === 'aspirant' && !existingReview && session?.status === 'confirmed') {
-      // Redirect to rating page
+    // Mandatory rating for aspirants
+    if (profile?.role === 'aspirant' && !existingReview && (sessionEnded || session?.status === 'completed')) {
       navigate(`/review/${sessionId}`);
     } else {
       onBack();
     }
+  };
+
+  const handleReply = (message: Message) => {
+    setReplyingTo(message);
+  };
+
+  const handleMessageDeleted = () => {
+    refetchMessages();
   };
 
   const otherParticipant = session?.client_id === user?.id ? session?.student : session?.client;
@@ -244,12 +276,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
                 </Badge>
                 <Badge 
                   className={`text-xs ${
+                    sessionEnded ? 'bg-red-100 text-red-800' :
                     session?.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                     session?.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                     'bg-yellow-100 text-yellow-800'
                   }`}
                 >
-                  {session?.status}
+                  {sessionEnded ? 'Ended' : session?.status}
                 </Badge>
               </div>
             </div>
@@ -257,7 +290,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
 
           <div className="flex items-center gap-4">
             {/* Session Timer */}
-            {timeLeft !== null && (
+            {timeLeft !== null && !sessionEnded && (
               <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
                 <Clock className="w-4 h-4 text-gray-600" />
                 <span className="text-sm font-medium text-gray-700">
@@ -270,14 +303,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
               </div>
             )}
 
-            {/* Show review reminder for aspirants */}
-            {isAspirant && !existingReview && session?.status === 'confirmed' && (
+            {/* Session ended indicator */}
+            {sessionEnded && (
+              <div className="flex items-center gap-2 bg-red-100 px-3 py-1 rounded-full">
+                <AlertTriangle className="w-4 h-4 text-red-600" />
+                <span className="text-sm font-medium text-red-700">Session Ended</span>
+              </div>
+            )}
+
+            {/* Rate session button for aspirants */}
+            {isAspirant && !existingReview && sessionEnded && (
               <Button
-                size="sm"
                 onClick={() => navigate(`/review/${sessionId}`)}
                 className="bg-green-600 hover:bg-green-700"
               >
-                <Star className="w-4 h-4 mr-2" />
                 Rate Session
               </Button>
             )}
@@ -289,37 +328,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages?.map((message) => {
-            const isOwnMessage = message.sender_id === user?.id;
             const repliedMessage = message.replied_to 
               ? messages.find(m => m.id === message.replied_to)
-              : null;
+              : undefined;
 
             return (
-              <div
+              <MessageItem
                 key={message.id}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`max-w-xs lg:max-w-md ${isOwnMessage ? 'order-2' : 'order-1'}`}>
-                  {repliedMessage && (
-                    <div className="mb-2 p-2 bg-gray-100 rounded text-xs text-gray-600 border-l-2 border-green-500">
-                      <p className="font-medium">Replying to:</p>
-                      <p className="truncate">{repliedMessage.message}</p>
-                    </div>
-                  )}
-                  <div
-                    className={`p-3 rounded-lg ${
-                      isOwnMessage
-                        ? 'bg-green-600 text-white'
-                        : 'bg-white border border-gray-200'
-                    }`}
-                  >
-                    <p className="text-sm">{message.message}</p>
-                    <p className={`text-xs mt-1 ${isOwnMessage ? 'text-green-100' : 'text-gray-500'}`}>
-                      {new Date(message.created_at).toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                message={message}
+                otherParticipant={otherParticipant}
+                currentUser={user}
+                onReply={handleReply}
+                onMessageDeleted={handleMessageDeleted}
+                repliedMessage={repliedMessage}
+              />
             );
           })}
           <div ref={messagesEndRef} />
@@ -340,24 +362,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
                 variant="ghost"
                 onClick={() => setReplyingTo(null)}
               >
-                ×
+                <X className="w-4 h-4" />
               </Button>
             </div>
           </div>
         )}
         
-        <form onSubmit={handleSendMessage} className="flex gap-2">
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type your message..."
-            disabled={isLoading}
-            className="flex-1"
-          />
-          <Button type="submit" disabled={isLoading || !newMessage.trim()}>
-            <Send className="w-4 h-4" />
-          </Button>
-        </form>
+        {sessionEnded ? (
+          <div className="flex items-center justify-center p-4 bg-gray-100 rounded-lg">
+            <p className="text-gray-600">Session has ended</p>
+            {isAspirant && !existingReview && (
+              <Button 
+                onClick={() => navigate(`/review/${sessionId}`)}
+                className="ml-4 bg-green-600 hover:bg-green-700"
+              >
+                Rate Session
+              </Button>
+            )}
+          </div>
+        ) : (
+          <form onSubmit={handleSendMessage} className="flex gap-2">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type your academic question or response..."
+              disabled={isLoading}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={isLoading || !newMessage.trim()}>
+              <Send className="w-4 h-4" />
+            </Button>
+          </form>
+        )}
       </div>
     </div>
   );

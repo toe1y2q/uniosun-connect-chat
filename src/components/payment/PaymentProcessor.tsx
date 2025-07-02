@@ -65,7 +65,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
     setPaymentMethod('wallet');
 
     try {
-      // Create session with wallet payment
+      // Create session with wallet payment - fix field names
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -83,7 +83,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
 
       if (sessionError) throw sessionError;
 
-      // Record wallet payment transaction
+      // Record wallet payment transaction - fix field names
       const { error: paymentTransactionError } = await supabase
         .from('transactions')
         .insert({
@@ -97,21 +97,6 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
         });
 
       if (paymentTransactionError) throw paymentTransactionError;
-
-      // Record student earning transaction
-      const { error: earningTransactionError } = await supabase
-        .from('transactions')
-        .insert({
-          user_id: sessionData.student_id,
-          session_id: session.id,
-          amount: Math.floor(amount * 0.8), // 80% to student
-          type: 'earning',
-          status: 'completed',
-          description: `Earnings from ${sessionData.duration} minute session`,
-          reference: `earning_${Date.now()}`
-        });
-
-      if (earningTransactionError) throw earningTransactionError;
 
       toast.success('Payment successful! Session booked.');
       onSuccess(session.id);
@@ -168,21 +153,6 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
               });
 
             if (paymentTransactionError) throw paymentTransactionError;
-
-            // Record student earning transaction
-            const { error: earningTransactionError } = await supabase
-              .from('transactions')
-              .insert({
-                user_id: sessionData.student_id,
-                session_id: session.id,
-                amount: Math.floor(amount * 0.8), // 80% to student
-                type: 'earning',
-                status: 'completed',
-                description: `Earnings from ${sessionData.duration} minute session`,
-                reference: `earning_${response.transaction_id}`
-              });
-
-            if (earningTransactionError) throw earningTransactionError;
 
             toast.success('Payment successful! Session booked.');
             onSuccess(session.id);

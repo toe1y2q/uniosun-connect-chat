@@ -56,9 +56,11 @@ export type Database = {
       chat_messages: {
         Row: {
           created_at: string | null
+          flagged_content_reason: string | null
           flagged_reason: string | null
           id: string
           is_flagged: boolean | null
+          is_flagged_content: boolean | null
           message: string
           replied_to: string | null
           sender_id: string
@@ -66,9 +68,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          flagged_content_reason?: string | null
           flagged_reason?: string | null
           id?: string
           is_flagged?: boolean | null
+          is_flagged_content?: boolean | null
           message: string
           replied_to?: string | null
           sender_id: string
@@ -76,9 +80,11 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          flagged_content_reason?: string | null
           flagged_reason?: string | null
           id?: string
           is_flagged?: boolean | null
+          is_flagged_content?: boolean | null
           message?: string
           replied_to?: string | null
           sender_id?: string
@@ -271,6 +277,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      restricted_content: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          keyword: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          keyword: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          keyword?: string
+        }
+        Relationships: []
       }
       reviews: {
         Row: {
