@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAutoScrollTabs } from '@/hooks/use-auto-scroll-tabs';
 import { 
   BookOpen, 
   MessageSquare, 
@@ -31,6 +31,8 @@ import AppealsList from '@/components/appeals/AppealsList';
 
 const AspirantDashboard = () => {
   const { profile } = useAuth();
+  const [activeTab, setActiveTab] = React.useState('overview');
+  const { tabsRef, registerTab } = useAutoScrollTabs(activeTab);
 
   // Fetch available talents for quick access
   const { data: talents } = useQuery({
@@ -170,28 +172,54 @@ const AspirantDashboard = () => {
           </Card>
         </motion.div>
 
-        <Tabs defaultValue="overview" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <div className="w-full relative">
-            <TabsList className="flex w-max min-w-full bg-green-100 h-auto p-1 gap-1 overflow-x-auto scrollbar-hide scroll-smooth">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
-                Sessions
-              </TabsTrigger>
-              <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
-                Wallet
-              </TabsTrigger>
-              <TabsTrigger value="appeals" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
-                Appeals
-              </TabsTrigger>
-              <TabsTrigger value="profile" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
-                Profile
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
-                Settings
-              </TabsTrigger>
-            </TabsList>
+            <div ref={tabsRef} className="overflow-x-auto scrollbar-hide">
+              <TabsList className="flex w-max min-w-full bg-green-100 h-auto p-1 gap-1">
+                <TabsTrigger 
+                  value="overview" 
+                  ref={(el) => registerTab('overview', el)}
+                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                >
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="sessions" 
+                  ref={(el) => registerTab('sessions', el)}
+                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                >
+                  Sessions
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="wallet" 
+                  ref={(el) => registerTab('wallet', el)}
+                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                >
+                  Wallet
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="appeals" 
+                  ref={(el) => registerTab('appeals', el)}
+                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                >
+                  Appeals
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="profile" 
+                  ref={(el) => registerTab('profile', el)}
+                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                >
+                  Profile
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="settings" 
+                  ref={(el) => registerTab('settings', el)}
+                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                >
+                  Settings
+                </TabsTrigger>
+              </TabsList>
+            </div>
           </div>
 
           <TabsContent value="overview" className="space-y-4">
