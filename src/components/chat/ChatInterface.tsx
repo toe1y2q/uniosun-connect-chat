@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, ArrowLeft, Flag, MessageSquare, AlertTriangle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Send, ArrowLeft, AlertTriangle, Reply, Trash2, Star, Clock } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,12 +18,21 @@ interface ChatInterfaceProps {
   onBack?: () => void;
 }
 
+interface ReviewFormData {
+  rating: number;
+  comment: string;
+}
+
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [replyToMessage, setReplyToMessage] = useState<string | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewData, setReviewData] = useState<ReviewFormData>({ rating: 5, comment: '' });
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -47,6 +58,52 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
     }
   });
 
+  // Timer logic for session duration
+  useEffect(() => {
+    if (session && session.status === 'confirmed') {
+      const sessionDuration = session.duration * 60 * 1000; // Convert to milliseconds
+      const startTime = new Date(session.updated_at || session.created_at).getTime();
+      const endTime = startTime + sessionDuration;
+      
+      const timer = setInterval(() => {
+        const now = Date.now();
+        const remaining = endTime - now;
+        
+        if (remaining <= 0) {
+          setSessionExpired(true);
+          setTimeRemaining(0);
+          clearInterval(timer);
+          
+          // Auto-complete session and show review form for aspirant
+          if (profile?.role === 'aspirant') {
+            completeMutation.mutate();
+            setShowReviewForm(true);
+          }
+        } else {
+          setTimeRemaining(remaining);
+        }
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [session, profile?.role]);
+
+  // Complete session mutation
+  const completeMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('sessions')
+        .update({ status: 'completed' })
+        .eq('id', sessionId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+      toast.success('Session completed');
+    }
+  });
+
   // Fetch chat messages
   const { data: messages, isLoading } = useQuery({
     queryKey: ['chat-messages', sessionId],
@@ -55,7 +112,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
         .from('chat_messages')
         .select(`
           *,
-          sender:users!chat_messages_sender_id_fkey (id, name, profile_image)
+          sender:users!chat_messages_sender_id_fkey (id, name, profile_image),
+          replied_to:chat_messages!chat_messages_replied_to_fkey (id, message, sender:users!chat_messages_sender_id_fkey (name))
         `)
         .eq('session_id', sessionId)
         .order('created_at', { ascending: true });
@@ -69,9 +127,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (newMessage: string) => {
-      if (!user || !newMessage.trim()) return;
+      if (!user || !newMessage.trim() || sessionExpired) return;
 
-      // Check for inappropriate content
+      // Content filtering
       const inappropriateKeywords = [
         'email', 'gmail', 'yahoo', 'hotmail', '@',
         'account number', 'bank account', 'transfer',
@@ -84,7 +142,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
         messageContent.includes(keyword)
       );
 
-      // Check if message is related to UNIOSUN
       const uniosunKeywords = [
         'uniosun', 'university', 'study', 'course', 'department',
         'exam', 'assignment', 'lecture', 'tutorial', 'academic',
@@ -112,6 +169,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
           session_id: sessionId,
           sender_id: user.id,
           message: newMessage,
+          replied_to: replyToMessage,
           is_flagged: isFlagged,
           flagged_reason: isFlagged ? flaggedReason : null
         })
@@ -120,7 +178,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
 
       if (error) throw error;
 
-      // If message is flagged, create a report for admin
       if (isFlagged) {
         await supabase.from('reports').insert({
           message_id: data.id,
@@ -136,6 +193,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
     },
     onSuccess: () => {
       setMessage('');
+      setReplyToMessage(null);
       queryClient.invalidateQueries({ queryKey: ['chat-messages', sessionId] });
     },
     onError: (error) => {
@@ -144,8 +202,46 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
     }
   });
 
+  // Delete message mutation
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', user?.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-messages', sessionId] });
+      toast.success('Message deleted');
+    }
+  });
+
+  // Submit review mutation
+  const submitReviewMutation = useMutation({
+    mutationFn: async (review: ReviewFormData) => {
+      const { error } = await supabase
+        .from('reviews')
+        .insert({
+          session_id: sessionId,
+          reviewer_id: user?.id!,
+          rating: review.rating,
+          comment: review.comment
+        });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Review submitted successfully');
+      setShowReviewForm(false);
+      navigate('/dashboard');
+    }
+  });
+
   const handleSendMessage = () => {
-    if (!message.trim()) return;
+    if (!message.trim() || sessionExpired) return;
     sendMessageMutation.mutate(message);
   };
 
@@ -154,6 +250,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleCopyPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    toast.error('Copy and paste is not allowed in chat');
+  };
+
+  const formatTime = (milliseconds: number) => {
+    const minutes = Math.floor(milliseconds / 60000);
+    const seconds = Math.floor((milliseconds % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   useEffect(() => {
@@ -187,7 +294,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading chat...</p>
         </div>
       </div>
@@ -195,6 +302,62 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   }
 
   const otherUser = session.client?.id === user?.id ? session.student : session.client;
+
+  // Review form modal
+  if (showReviewForm && profile?.role === 'aspirant') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">Rate Your Session</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Rating</label>
+              <div className="flex gap-1 justify-center">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setReviewData({ ...reviewData, rating: star })}
+                    className={`p-1 ${reviewData.rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}
+                  >
+                    <Star className="w-6 h-6 fill-current" />
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">Comment (Optional)</label>
+              <Textarea
+                value={reviewData.comment}
+                onChange={(e) => setReviewData({ ...reviewData, comment: e.target.value })}
+                placeholder="Share your experience..."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => navigate('/dashboard')}
+                variant="outline" 
+                className="flex-1"
+              >
+                Skip
+              </Button>
+              <Button 
+                onClick={() => submitReviewMutation.mutate(reviewData)}
+                disabled={submitReviewMutation.isPending}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                Submit Review
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col max-w-screen-sm sm:max-w-4xl mx-auto">
@@ -225,6 +388,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
                   {session.duration} mins
                 </Badge>
                 <span>₦{(session.amount / 100).toLocaleString()}</span>
+                {timeRemaining > 0 && (
+                  <div className="flex items-center gap-1 text-orange-600">
+                    <Clock className="w-3 h-3" />
+                    <span className="text-xs font-mono">{formatTime(timeRemaining)}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -233,7 +402,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
               session.status === 'completed' ? 'bg-blue-100 text-blue-800' :
               'bg-yellow-100 text-yellow-800'
             }>
-              {session.status}
+              {sessionExpired ? 'Expired' : session.status}
             </Badge>
           </div>
         </CardHeader>
@@ -247,7 +416,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
           </div>
         ) : messages?.length === 0 ? (
           <div className="text-center py-8">
-            <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Send className="w-6 h-6 text-green-600" />
+            </div>
             <h3 className="text-lg font-semibold mb-2">Start the conversation</h3>
             <p className="text-gray-600 text-sm px-4">
               Begin your tutoring session! Keep the conversation academic and related to UNIOSUN studies.
@@ -275,6 +446,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
                       <span className="text-xs text-gray-600">{msg.sender?.name}</span>
                     </div>
                   )}
+
+                  {msg.replied_to && (
+                    <div className="text-xs text-gray-500 mb-1 p-2 bg-gray-100 rounded border-l-2 border-gray-300">
+                      <div className="font-medium">{msg.replied_to.sender?.name}</div>
+                      <div className="truncate">{msg.replied_to.message}</div>
+                    </div>
+                  )}
                   
                   <div
                     className={`rounded-2xl px-4 py-2 ${
@@ -291,6 +469,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
                       <div className="flex items-center gap-1 mt-2 text-xs text-red-600">
                         <AlertTriangle className="w-3 h-3" />
                         <span>Flagged for review</span>
+                      </div>
+                    )}
+
+                    {!sessionExpired && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          onClick={() => setReplyToMessage(msg.id)}
+                          className="text-xs opacity-60 hover:opacity-100 flex items-center gap-1"
+                        >
+                          <Reply className="w-3 h-3" />
+                          Reply
+                        </button>
+                        {isOwn && (
+                          <button
+                            onClick={() => deleteMessageMutation.mutate(msg.id)}
+                            className="text-xs opacity-60 hover:opacity-100 flex items-center gap-1 text-red-500"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -310,14 +509,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
       </div>
 
       {/* Input */}
-      {session.status === 'confirmed' && (
+      {session.status === 'confirmed' && !sessionExpired && (
         <Card className="rounded-none border-0 border-t">
           <CardContent className="p-4">
+            {replyToMessage && (
+              <div className="mb-2 p-2 bg-gray-100 rounded text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Replying to message</span>
+                  <button 
+                    onClick={() => setReplyToMessage(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            )}
+            
             <div className="flex gap-2">
               <Input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
+                onCopy={handleCopyPaste}
+                onPaste={handleCopyPaste}
                 placeholder="Type your message..."
                 disabled={sendMessageMutation.isPending}
                 className="flex-1"
@@ -336,9 +551,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
             <div className="mt-2 text-xs text-gray-500 px-1">
               <div className="flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3 text-amber-500" />
-                <span>Keep conversations academic and UNIOSUN-related. Contact info sharing is prohibited.</span>
+                <span>Keep conversations academic and UNIOSUN-related. Copy/paste disabled.</span>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {sessionExpired && profile?.role === 'aspirant' && (
+        <Card className="rounded-none border-0 border-t bg-blue-50">
+          <CardContent className="p-4 text-center">
+            <p className="text-blue-800 font-medium mb-2">Session has ended</p>
+            <Button 
+              onClick={() => setShowReviewForm(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Rate & Review
+            </Button>
           </CardContent>
         </Card>
       )}
