@@ -34,9 +34,9 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
   const walletBalance = profile?.wallet_balance || 0;
   const canPayWithWallet = walletBalance >= amount;
 
-  // Flutterwave configuration
+  // Flutterwave configuration with escrow
   const config = {
-    public_key: 'FLWPUBK_TEST-4c0c8ec9f4a5f4c13c5c0b8b5a3b4a7f-X',
+    public_key: 'FLWPUBK-08518f8d77cbc2a7fbdd880c432bd85f-X',
     tx_ref: `session_${Date.now()}_${user?.id}`,
     amount: amount / 100,
     currency: 'NGN',
@@ -51,6 +51,11 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
       description: `Payment for ${sessionData.duration} minute tutoring session`,
       logo: '',
     },
+    meta: [
+      { metaname: 'rave_escrow_tx', metavalue: '1' },
+      { metaname: 'session_type', metavalue: 'tutoring' },
+      { metaname: 'duration', metavalue: sessionData.duration.toString() }
+    ],
   };
 
   const handleFlutterPayment = useFlutterwave(config);
@@ -65,7 +70,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
     setPaymentMethod('wallet');
 
     try {
-      // Create session with wallet payment - fix field names
+      // Create session with wallet payment
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -83,7 +88,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
 
       if (sessionError) throw sessionError;
 
-      // Record wallet payment transaction - fix field names
+      // Record wallet payment transaction
       const { error: paymentTransactionError } = await supabase
         .from('transactions')
         .insert({
@@ -120,7 +125,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
           setIsProcessing(true);
           
           try {
-            // Create session with Flutterwave payment
+            // Create session with Flutterwave payment (escrow)
             const { data: session, error: sessionError } = await supabase
               .from('sessions')
               .insert({
@@ -131,7 +136,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
                 scheduled_at: sessionData.scheduled_at,
                 description: sessionData.description || '',
                 status: 'confirmed',
-                payment_status: 'completed',
+                payment_status: 'escrowed', // Special status for escrow payments
                 flutterwave_reference: response.transaction_id
               })
               .select()
@@ -148,13 +153,13 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
                 amount: amount,
                 type: 'payment',
                 status: 'completed',
-                description: `Payment for ${sessionData.duration} minute session`,
+                description: `Escrow payment for ${sessionData.duration} minute session`,
                 reference: response.transaction_id
               });
 
             if (paymentTransactionError) throw paymentTransactionError;
 
-            toast.success('Payment successful! Session booked.');
+            toast.success('Payment successful! Funds are held in escrow until session completion.');
             onSuccess(session.id);
           } catch (error) {
             console.error('Flutterwave payment error:', error);
@@ -189,6 +194,12 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
           <div className="flex justify-between items-center">
             <span className="text-gray-700">Session Duration:</span>
             <span className="font-medium">{sessionData.duration} minutes</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-700">Rate:</span>
+            <span className="font-medium">
+              {sessionData.duration === 30 ? '₦1,000' : '₦1,500'}/session
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-700">Amount:</span>
@@ -261,7 +272,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
           </CardContent>
         </Card>
 
-        {/* Flutterwave Payment Option */}
+        {/* Flutterwave Payment Option with Escrow */}
         <Card 
           className="border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
           onClick={processFlutterwavePayment}
@@ -278,15 +289,27 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Pay with Card/Bank</p>
-                  <p className="text-sm text-gray-600">Secure payment via Flutterwave</p>
+                  <p className="text-sm text-gray-600">Secure escrow payment via Flutterwave</p>
+                  <p className="text-xs text-blue-600 font-medium">
+                    Funds held safely until session completion
+                  </p>
                 </div>
               </div>
               <Badge variant="outline" className="border-blue-200 text-blue-600">
-                All Cards Accepted
+                Escrow Protected
               </Badge>
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h4 className="font-medium text-blue-900 mb-2">Payment Protection</h4>
+        <ul className="text-sm text-blue-800 space-y-1">
+          <li>• Funds are held securely until session completion</li>
+          <li>• Student receives 70% payout after your review</li>
+          <li>• Full refund if session doesn't proceed as planned</li>
+        </ul>
       </div>
 
       <div className="flex gap-3 pt-4">

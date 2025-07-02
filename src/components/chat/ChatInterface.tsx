@@ -1,59 +1,68 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/auth/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, Clock, X, AlertTriangle } from 'lucide-react';
-import { useAuth } from '@/components/auth/AuthContext';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ArrowLeft, Send, Clock, AlertCircle, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { useContentFilter } from '@/hooks/useContentFilter';
 import MessageItem from './MessageItem';
+import { useContentFilter } from '@/hooks/useContentFilter';
+
+interface ChatMessage {
+  id: string;
+  message: string;
+  sender_id: string;
+  created_at: string;
+  replied_to?: string;
+  is_flagged_content?: boolean;
+  flagged_content_reason?: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  profile_image?: string;
+}
+
+interface Session {
+  id: string;
+  duration: number;
+  scheduled_at: string;
+  status: string;
+  client_id: string;
+  student_id: string;
+  amount: number;
+}
 
 interface ChatInterfaceProps {
   sessionId: string;
   onBack: () => void;
 }
 
-interface Message {
-  id: string;
-  sender_id: string;
-  message: string;
-  created_at: string;
-  replied_to?: string;
-  is_flagged?: boolean;
-  is_flagged_content?: boolean;
-}
-
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [newMessage, setNewMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [sessionStarted, setSessionStarted] = useState(false);
-  const [sessionEnded, setSessionEnded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [message, setMessage] = useState('');
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [sessionEnded, setSessionEnded] = useState(false);
   const { isMessageAllowed } = useContentFilter();
 
   // Fetch session details
-  const { data: session } = useQuery({
+  const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ['session', sessionId],
-    queryFn: async () => {
+    queryFn: async (): Promise<Session> => {
       const { data, error } = await supabase
         .from('sessions')
-        .select(`
-          *,
-          client:users!sessions_client_id_fkey (id, name, profile_image),
-          student:users!sessions_student_id_fkey (id, name, profile_image)
-        `)
+        .select('*')
         .eq('id', sessionId)
         .single();
       
@@ -63,9 +72,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   });
 
   // Fetch messages
-  const { data: messages, refetch: refetchMessages } = useQuery({
+  const { data: messages, isLoading: messagesLoading } = useQuery({
     queryKey: ['messages', sessionId],
-    queryFun: async () => {
+    queryFn: async (): Promise<ChatMessage[]> => {
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -73,328 +82,275 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data as Message[];
-    },
-    refetchInterval: 3000
+      return data || [];
+    }
   });
 
-  // Check if review exists for this session
-  const { data: existingReview } = useQuery({
-    queryKey: ['review', sessionId, profile?.id],
-    queryFn: async () => {
-      if (!profile?.id) return null;
+  // Fetch users for the session
+  const { data: users } = useQuery({
+    queryKey: ['session-users', session?.client_id, session?.student_id],
+    queryFn: async (): Promise<User[]> => {
+      if (!session) return [];
       
       const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('session_id', sessionId)
-        .eq('reviewer_id', profile.id)
-        .maybeSingle();
+        .from('users')
+        .select('id, name, profile_image')
+        .in('id', [session.client_id, session.student_id]);
       
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!session
+  });
+
+  // Calculate time left
+  useEffect(() => {
+    if (!session) return;
+
+    const sessionStart = new Date(session.scheduled_at);
+    const sessionEnd = new Date(sessionStart.getTime() + (session.duration * 60 * 1000));
+    
+    const updateTimer = () => {
+      const now = new Date();
+      const remaining = Math.max(0, sessionEnd.getTime() - now.getTime());
+      
+      if (remaining === 0 && !sessionEnded) {
+        setSessionEnded(true);
+        handleSessionEnd();
+      }
+      
+      setTimeLeft(Math.floor(remaining / 1000));
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [session, sessionEnded]);
+
+  const handleSessionEnd = async () => {
+    try {
+      // Update session status to completed
+      await supabase
+        .from('sessions')
+        .update({ status: 'completed' })
+        .eq('id', sessionId);
+
+      toast.info('Session has ended. Please provide your review.');
+      
+      // Navigate to rating page if user is aspirant (client)
+      if (user?.id === session?.client_id) {
+        navigate(`/rating-review/${sessionId}`);
+      }
+    } catch (error) {
+      console.error('Error ending session:', error);
+    }
+  };
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageData: { message: string; replied_to?: string }) => {
+      // Check content filtering
+      const contentCheck = isMessageAllowed(messageData.message);
+      if (!contentCheck.allowed) {
+        throw new Error(contentCheck.reason || 'Message not allowed');
+      }
+
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert({
+          session_id: sessionId,
+          sender_id: user?.id!,
+          message: messageData.message,
+          replied_to: messageData.replied_to || null
+        })
+        .select()
+        .single();
+
       if (error) throw error;
       return data;
     },
-    enabled: !!profile?.id
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+      setMessage('');
+      setReplyingTo(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    }
   });
 
-  // Subscribe to new messages
-  useEffect(() => {
-    const channel = supabase
-      .channel(`session-${sessionId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `session_id=eq.${sessionId}`
-        },
-        () => {
-          refetchMessages();
-        }
-      )
-      .subscribe();
+  // Delete message mutation
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({ message: '[Message deleted]', is_flagged_content: true })
+        .eq('id', messageId)
+        .eq('sender_id', user?.id!);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [sessionId, refetchMessages]);
-
-  // Session timer and management
-  useEffect(() => {
-    if (session && session.status === 'confirmed') {
-      const sessionDuration = session.duration * 60 * 1000;
-      const scheduledTime = new Date(session.scheduled_at).getTime();
-      const now = Date.now();
-      
-      const sessionStartTime = scheduledTime - (5 * 60 * 1000);
-      const sessionEndTime = scheduledTime + sessionDuration;
-      
-      if (now >= sessionStartTime && now <= sessionEndTime) {
-        setSessionStarted(true);
-        const remaining = sessionEndTime - now;
-        setTimeLeft(Math.max(0, remaining));
-        
-        const timer = setInterval(() => {
-          const remaining = sessionEndTime - Date.now();
-          if (remaining <= 0) {
-            setTimeLeft(0);
-            setSessionEnded(true);
-            clearInterval(timer);
-            
-            // Auto-redirect aspirant to rating page if no review exists
-            if (profile?.role === 'aspirant' && !existingReview) {
-              toast.info('Session ended. Please rate your experience.');
-              setTimeout(() => {
-                navigate(`/review/${sessionId}`);
-              }, 2000);
-            }
-          } else {
-            setTimeLeft(remaining);
-          }
-        }, 1000);
-        
-        return () => clearInterval(timer);
-      } else if (now < sessionStartTime) {
-        const timeUntilStart = sessionStartTime - now;
-        setTimeLeft(timeUntilStart);
-        
-        const timer = setInterval(() => {
-          const remaining = sessionStartTime - Date.now();
-          if (remaining <= 0) {
-            setSessionStarted(true);
-            clearInterval(timer);
-          } else {
-            setTimeLeft(remaining);
-          }
-        }, 1000);
-        
-        return () => clearInterval(timer);
-      }
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', sessionId] });
+      toast.success('Message deleted');
     }
-  }, [session, sessionId, navigate, profile?.role, existingReview]);
+  });
+
+  const handleSendMessage = () => {
+    if (!message.trim() || sessionEnded) return;
+    
+    sendMessageMutation.mutate({
+      message: message.trim(),
+      replied_to: replyingTo
+    });
+  };
+
+  const handleReply = (messageId: string) => {
+    setReplyingTo(messageId);
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    deleteMessageMutation.mutate(messageId);
+  };
 
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || isLoading) return;
-
-    // Content filtering
-    const filterResult = isMessageAllowed(newMessage);
-    if (!filterResult.allowed) {
-      toast.error(filterResult.reason);
-      return;
-    }
-
-    // Check if session has ended
-    if (sessionEnded) {
-      toast.error('Session has ended. You cannot send messages.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert({
-          session_id: sessionId,
-          sender_id: user?.id,
-          message: newMessage.trim(),
-          replied_to: replyingTo?.id || null
-        });
-
-      if (error) throw error;
-
-      setNewMessage('');
-      setReplyingTo(null);
-      refetchMessages();
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to send message');
-    } finally {
-      setIsLoading(false);
-    }
+  // Format time display
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleCloseChat = () => {
-    // Mandatory rating for aspirants
-    if (profile?.role === 'aspirant' && !existingReview && (sessionEnded || session?.status === 'completed')) {
-      navigate(`/review/${sessionId}`);
-    } else {
-      onBack();
-    }
+  const getReplyingToMessage = (messageId: string) => {
+    return (messages as ChatMessage[])?.find(m => m.id === messageId);
   };
 
-  const handleReply = (message: Message) => {
-    setReplyingTo(message);
+  const getMessageSender = (senderId: string) => {
+    return (users as User[])?.find(u => u.id === senderId);
   };
 
-  const handleMessageDeleted = () => {
-    refetchMessages();
-  };
-
-  const otherParticipant = session?.client_id === user?.id ? session?.student : session?.client;
-  const isAspirant = profile?.role === 'aspirant';
-
-  const formatTimeLeft = (milliseconds: number) => {
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  if (sessionLoading || messagesLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-pulse text-gray-600">Loading chat...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
+      <div className="bg-white border-b px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={handleCloseChat}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+            <Button variant="ghost" size="sm" onClick={onBack}>
+              <ArrowLeft className="w-4 h-4" />
             </Button>
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={otherParticipant?.profile_image} />
-              <AvatarFallback>
-                {otherParticipant?.name?.split(' ').map((n: string) => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
             <div>
-              <h3 className="font-semibold">{otherParticipant?.name}</h3>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  {session?.duration} min session
-                </Badge>
-                <Badge 
-                  className={`text-xs ${
-                    sessionEnded ? 'bg-red-100 text-red-800' :
-                    session?.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                    session?.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}
-                >
-                  {sessionEnded ? 'Ended' : session?.status}
-                </Badge>
+              <h2 className="font-semibold">Tutoring Session</h2>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Clock className="w-4 h-4" />
+                {sessionEnded ? (
+                  <Badge variant="destructive">Session Ended</Badge>
+                ) : (
+                  <span>Time left: {formatTime(timeLeft)}</span>
+                )}
               </div>
             </div>
           </div>
-
-          <div className="flex items-center gap-4">
-            {/* Session Timer */}
-            {timeLeft !== null && !sessionEnded && (
-              <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
-                <Clock className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">
-                  {sessionStarted ? (
-                    timeLeft > 0 ? `${formatTimeLeft(timeLeft)} left` : 'Session ended'
-                  ) : (
-                    `Starts in ${formatTimeLeft(timeLeft)}`
-                  )}
-                </span>
-              </div>
-            )}
-
-            {/* Session ended indicator */}
-            {sessionEnded && (
-              <div className="flex items-center gap-2 bg-red-100 px-3 py-1 rounded-full">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-                <span className="text-sm font-medium text-red-700">Session Ended</span>
-              </div>
-            )}
-
-            {/* Rate session button for aspirants */}
-            {isAspirant && !existingReview && sessionEnded && (
-              <Button
-                onClick={() => navigate(`/review/${sessionId}`)}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                Rate Session
-              </Button>
-            )}
-          </div>
+          
+          {session && (
+            <div className="text-right">
+              <p className="text-sm font-medium">₦{(session.amount / 100).toLocaleString()}</p>
+              <p className="text-xs text-gray-600">{session.duration} minutes</p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages?.map((message) => {
-            const repliedMessage = message.replied_to 
-              ? messages.find(m => m.id === message.replied_to)
-              : undefined;
-
-            return (
-              <MessageItem
-                key={message.id}
-                message={message}
-                otherParticipant={otherParticipant}
-                currentUser={user}
-                onReply={handleReply}
-                onMessageDeleted={handleMessageDeleted}
-                repliedMessage={repliedMessage}
-              />
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-
-      {/* Message Input */}
-      <div className="bg-white border-t border-gray-200 p-4">
-        {replyingTo && (
-          <div className="mb-3 p-2 bg-gray-50 rounded text-sm">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="font-medium text-gray-700">Replying to:</p>
-                <p className="text-gray-600 truncate">{replyingTo.message}</p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setReplyingTo(null)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages?.map((msg) => (
+          <MessageItem
+            key={msg.id}
+            message={msg}
+            sender={getMessageSender(msg.sender_id)}
+            isCurrentUser={msg.sender_id === user?.id}
+            replyingToMessage={msg.replied_to ? getReplyingToMessage(msg.replied_to) : undefined}
+            replyingToSender={msg.replied_to ? getMessageSender(getReplyingToMessage(msg.replied_to)?.sender_id || '') : undefined}
+            onReply={handleReply}
+            onDelete={handleDeleteMessage}
+          />
+        ))}
+        
+        {sessionEnded && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="p-4 text-center">
+              <AlertCircle className="w-8 h-8 text-orange-600 mx-auto mb-2" />
+              <p className="text-orange-800 font-medium">Session has ended</p>
+              <p className="text-orange-600 text-sm">
+                {user?.id === session?.client_id && 'Please provide your review to complete the session.'}
+              </p>
+            </CardContent>
+          </Card>
         )}
         
-        {sessionEnded ? (
-          <div className="flex items-center justify-center p-4 bg-gray-100 rounded-lg">
-            <p className="text-gray-600">Session has ended</p>
-            {isAspirant && !existingReview && (
-              <Button 
-                onClick={() => navigate(`/review/${sessionId}`)}
-                className="ml-4 bg-green-600 hover:bg-green-700"
-              >
-                Rate Session
-              </Button>
-            )}
-          </div>
-        ) : (
-          <form onSubmit={handleSendMessage} className="flex gap-2">
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Message Input */}
+      {!sessionEnded && (
+        <div className="bg-white border-t p-4">
+          {replyingTo && (
+            <div className="mb-2 p-2 bg-blue-50 border-l-4 border-blue-400 rounded">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-blue-600 font-medium">
+                    Replying to {getMessageSender(getReplyingToMessage(replyingTo)?.sender_id || '')?.name}
+                  </p>
+                  <p className="text-sm text-gray-700 truncate">
+                    {getReplyingToMessage(replyingTo)?.message}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setReplyingTo(null)}
+                  className="text-xs"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex gap-2">
             <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your academic question or response..."
-              disabled={isLoading}
-              className="flex-1"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type your message... (academic topics only)"
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              disabled={sendMessageMutation.isPending}
             />
-            <Button type="submit" disabled={isLoading || !newMessage.trim()}>
+            <Button
+              onClick={handleSendMessage}
+              disabled={!message.trim() || sendMessageMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
               <Send className="w-4 h-4" />
             </Button>
-          </form>
-        )}
-      </div>
+          </div>
+          
+          <p className="text-xs text-gray-500 mt-1">
+            Messages are filtered to ensure academic-focused discussions
+          </p>
+        </div>
+      )}
     </div>
   );
 };
