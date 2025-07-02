@@ -18,29 +18,36 @@ interface Message {
   is_flagged_content?: boolean;
 }
 
+interface User {
+  id: string;
+  name: string;
+  profile_image?: string;
+}
+
 interface MessageItemProps {
   message: Message;
-  otherParticipant: any;
-  currentUser: any;
-  onReply: (message: Message) => void;
-  onMessageDeleted: () => void;
-  repliedMessage?: Message;
+  sender?: User;
+  isCurrentUser: boolean;
+  replyingToMessage?: Message;
+  replyingToSender?: User;
+  onReply: (messageId: string) => void;
+  onDelete: (messageId: string) => void;
 }
 
 const MessageItem: React.FC<MessageItemProps> = ({
   message,
-  otherParticipant,
-  currentUser,
+  sender,
+  isCurrentUser,
+  replyingToMessage,
+  replyingToSender,
   onReply,
-  onMessageDeleted,
-  repliedMessage
+  onDelete
 }) => {
   const { user } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
-  const isOwnMessage = message.sender_id === user?.id;
 
   const handleDeleteMessage = async () => {
-    if (!isOwnMessage) return;
+    if (!isCurrentUser) return;
     
     setIsDeleting(true);
     try {
@@ -55,7 +62,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
       if (error) throw error;
       
       toast.success('Message deleted');
-      onMessageDeleted();
+      onDelete(message.id);
     } catch (error) {
       console.error('Error deleting message:', error);
       toast.error('Failed to delete message');
@@ -65,7 +72,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
   };
 
   const handleFlagMessage = async () => {
-    if (isOwnMessage) return;
+    if (isCurrentUser) return;
     
     try {
       const { error } = await supabase
@@ -87,7 +94,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   if (message.is_flagged && message.message === '[Message deleted]') {
     return (
-      <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4`}>
+      <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}>
         <div className="max-w-xs lg:max-w-md">
           <div className="p-3 rounded-lg bg-gray-100 border border-gray-200">
             <p className="text-sm text-gray-500 italic">[Message deleted]</p>
@@ -101,35 +108,37 @@ const MessageItem: React.FC<MessageItemProps> = ({
   }
 
   return (
-    <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4 group`}>
-      <div className={`max-w-xs lg:max-w-md flex items-start gap-2 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
-        {!isOwnMessage && (
+    <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4 group`}>
+      <div className={`max-w-xs lg:max-w-md flex items-start gap-2 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
+        {!isCurrentUser && sender && (
           <Avatar className="w-8 h-8">
-            <AvatarImage src={otherParticipant?.profile_image} />
+            <AvatarImage src={sender.profile_image} />
             <AvatarFallback>
-              {otherParticipant?.name?.split(' ').map((n: string) => n[0]).join('')}
+              {sender.name?.split(' ').map((n: string) => n[0]).join('')}
             </AvatarFallback>
           </Avatar>
         )}
         
         <div className="flex-1">
-          {repliedMessage && (
+          {replyingToMessage && (
             <div className="mb-2 p-2 bg-gray-50 rounded text-xs border-l-2 border-green-500">
-              <p className="font-medium text-gray-600">Replying to:</p>
-              <p className="text-gray-700 truncate">{repliedMessage.message}</p>
+              <p className="font-medium text-gray-600">
+                Replying to {replyingToSender?.name}:
+              </p>
+              <p className="text-gray-700 truncate">{replyingToMessage.message}</p>
             </div>
           )}
           
           <div
             className={`p-3 rounded-lg ${
-              isOwnMessage
+              isCurrentUser
                 ? 'bg-green-600 text-white'
                 : 'bg-white border border-gray-200'
             }`}
           >
             <p className="text-sm">{message.message}</p>
             <div className="flex items-center justify-between mt-1">
-              <p className={`text-xs ${isOwnMessage ? 'text-green-100' : 'text-gray-500'}`}>
+              <p className={`text-xs ${isCurrentUser ? 'text-green-100' : 'text-gray-500'}`}>
                 {new Date(message.created_at).toLocaleTimeString()}
               </p>
               
@@ -141,11 +150,11 @@ const MessageItem: React.FC<MessageItemProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onReply(message)}>
+                    <DropdownMenuItem onClick={() => onReply(message.id)}>
                       <Reply className="w-4 h-4 mr-2" />
                       Reply
                     </DropdownMenuItem>
-                    {isOwnMessage && (
+                    {isCurrentUser && (
                       <DropdownMenuItem 
                         onClick={handleDeleteMessage}
                         disabled={isDeleting}
@@ -155,7 +164,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                         Delete
                       </DropdownMenuItem>
                     )}
-                    {!isOwnMessage && (
+                    {!isCurrentUser && (
                       <DropdownMenuItem 
                         onClick={handleFlagMessage}
                         className="text-red-600"
