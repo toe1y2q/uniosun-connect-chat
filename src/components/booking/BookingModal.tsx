@@ -33,13 +33,27 @@ interface BookingModalProps {
 
 const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
   const { profile } = useAuth();
-  const [duration, setDuration] = useState('60');
+  const [duration, setDuration] = useState('30');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [description, setDescription] = useState('');
   const [showPayment, setShowPayment] = useState(false);
 
-  // Fetch reviews for this student
+  // Updated pricing structure
+  const getPriceForDuration = (minutes: number) => {
+    switch (minutes) {
+      case 30:
+        return 1000;
+      case 60:
+        return 1500;
+      case 90:
+        return 2000;
+      default:
+        return 1000;
+    }
+  };
+
+  // Fetch reviews for this student to get real ratings
   const { data: reviews } = useQuery({
     queryKey: ['student-reviews', student?.id],
     queryFn: async () => {
@@ -71,7 +85,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
 
   const handlePaymentSuccess = async () => {
     const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
-    const amount = (parseInt(duration) / 30) * 500; // Fixed pricing calculation
+    const amount = getPriceForDuration(parseInt(duration));
 
     try {
       const { data, error } = await supabase
@@ -82,7 +96,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
           duration: parseInt(duration),
           scheduled_at: scheduledAt.toISOString(),
           description: description,
-          amount: amount, // Store amount in naira, not kobo
+          amount: amount,
           status: 'pending'
         });
 
@@ -243,10 +257,9 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
                         className="w-full p-2 border border-gray-300 rounded-md"
                         required
                       >
-                        <option value="30">30 minutes - ₦500</option>
-                        <option value="60">60 minutes - ₦1000</option>
-                        <option value="90">90 minutes - ₦1500</option>
-                        <option value="120">120 minutes - ₦2000</option>
+                        <option value="30">30 minutes - ₦1,000</option>
+                        <option value="60">60 minutes - ₦1,500</option>
+                        <option value="90">90 minutes - ₦2,000</option>
                       </select>
                     </div>
 
@@ -305,11 +318,11 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
                       </div>
                       <div className="flex justify-between">
                         <span>Rate:</span>
-                        <span>₦{(parseInt(duration) / 30) * 500}/session</span>
+                        <span>₦{getPriceForDuration(parseInt(duration)).toLocaleString()}/session</span>
                       </div>
                       <div className="flex justify-between font-semibold text-lg border-t pt-2">
                         <span>Total:</span>
-                        <span>₦{(parseInt(duration) / 30) * 500}</span>
+                        <span>₦{getPriceForDuration(parseInt(duration)).toLocaleString()}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -326,7 +339,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
               </form>
             ) : (
               <PaymentSelector
-                amount={(parseInt(duration) / 30) * 500}
+                amount={getPriceForDuration(parseInt(duration))}
                 onPaymentSuccess={handlePaymentSuccess}
                 onCancel={() => setShowPayment(false)}
               />

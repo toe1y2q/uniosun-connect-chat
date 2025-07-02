@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,12 +77,12 @@ const StudentDashboard = () => {
     enabled: !!profile?.id
   });
 
-  // Fetch earnings
+  // Fetch earnings from wallets table
   const { data: earnings } = useQuery({
     queryKey: ['student-earnings', profile?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('wallet')
+        .from('wallets')
         .select('balance')
         .eq('user_id', profile?.id)
         .single();

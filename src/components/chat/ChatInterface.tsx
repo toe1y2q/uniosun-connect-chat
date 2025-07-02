@@ -289,7 +289,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
     }
   });
 
-  // Submit review mutation
+  // Submit review mutation with immediate payment release
   const submitReviewMutation = useMutation({
     mutationFn: async (review: ReviewFormData) => {
       const { error } = await supabase
@@ -302,9 +302,45 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
         });
       
       if (error) throw error;
+
+      // Immediately add payment to student's wallet upon review submission
+      if (session?.student_id && session?.amount) {
+        const { error: walletError } = await supabase
+          .from('wallets')
+          .upsert({
+            user_id: session.student_id,
+            balance: session.amount
+          }, {
+            onConflict: 'user_id'
+          });
+
+        if (walletError) {
+          // If upsert fails, try to update existing wallet
+          const { error: updateError } = await supabase.rpc('increment_wallet_balance', {
+            user_id: session.student_id,
+            amount: session.amount
+          });
+
+          if (updateError) {
+            console.error('Error updating wallet:', updateError);
+          }
+        }
+
+        // Create transaction record
+        await supabase
+          .from('transactions')
+          .insert({
+            user_id: session.student_id,
+            type: 'earning',
+            amount: session.amount,
+            session_id: sessionId,
+            status: 'completed',
+            description: `Payment for tutoring session`
+          });
+      }
     },
     onSuccess: () => {
-      toast.success('Review submitted successfully! Payment will be released to the student.');
+      toast.success('Review submitted successfully! Payment has been released to the student.');
       setReviewSubmitted(true);
       setShowReviewForm(false);
       setPreventNavigation(false);
@@ -450,7 +486,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
             </Button>
             
             <p className="text-xs text-center text-gray-500">
-              Payment will be released to the student after you submit this review.
+              Payment will be released to the student immediately after you submit this review.
             </p>
           </CardContent>
         </Card>
