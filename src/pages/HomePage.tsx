@@ -36,7 +36,7 @@ const HomePage = ({
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src="/lovable-uploads/2cfdba4a-2a41-4b35-b9db-a87db18e0f7c.png" 
+              src="/lovable-uploads/270d670b-7fe2-42b8-bbd7-b561eb4ec96b.png" 
               alt="Hireveno Logo" 
               className="h-8 w-auto"
             />
@@ -198,7 +198,7 @@ const HomePage = ({
         <div className="container mx-auto text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
             <img 
-              src="/lovable-uploads/2cfdba4a-2a41-4b35-b9db-a87db18e0f7c.png" 
+              src="/lovable-uploads/270d670b-7fe2-42b8-bbd7-b561eb4ec96b.png" 
               alt="Hireveno Logo" 
               className="h-8 w-auto filter brightness-0 invert"
             />

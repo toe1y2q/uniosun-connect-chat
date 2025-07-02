@@ -21,12 +21,14 @@ import NotFound from "./pages/NotFound";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useState, useEffect } from "react";
 import NotificationSystem from "@/components/notifications/NotificationSystem";
+import { InstallPrompt } from "@/components/ui/install-prompt";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { user, profile, loading } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(true);
 
   console.log('App state:', { user: !!user, profile, loading });
 
@@ -55,6 +57,9 @@ const AppContent = () => {
   return (
     <>
       <NotificationSystem />
+      {showInstallPrompt && (
+        <InstallPrompt onDismiss={() => setShowInstallPrompt(false)} />
+      )}
       <Routes>
         <Route path="/" element={
           !user ? (
