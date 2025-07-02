@@ -13,9 +13,9 @@ const NotificationBell = () => {
 
   // Fetch user notifications based on their activities
   const { data: notifications, isLoading } = useQuery({
-    queryKey: ['notifications', user?.id],
+    queryKey: ['notifications', user?.id, profile?.role],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id || !profile?.role) return [];
 
       const notifications: any[] = [];
 
@@ -163,8 +163,9 @@ const NotificationBell = () => {
       // Sort by time
       return notifications.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
     },
-    enabled: !!user?.id,
-    refetchInterval: 30000 // Refetch every 30 seconds
+    enabled: !!user?.id && !!profile?.role,
+    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 10000 // Consider data stale after 10 seconds
   });
 
   const unreadCount = notifications?.filter(n => n.unread).length || 0;

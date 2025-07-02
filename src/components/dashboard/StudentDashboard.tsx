@@ -177,8 +177,8 @@ const StudentDashboard = () => {
         </motion.div>
 
         <Tabs defaultValue="overview" className="space-y-4">
-          <ScrollArea className="w-full">
-            <TabsList className="flex w-max min-w-full bg-green-100 h-auto p-1 gap-1">
+          <div className="w-full relative">
+            <TabsList className="flex w-max min-w-full bg-green-100 h-auto p-1 gap-1 overflow-x-auto scrollbar-hide scroll-smooth">
               <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
                 Overview
               </TabsTrigger>
@@ -201,7 +201,7 @@ const StudentDashboard = () => {
                 Profile
               </TabsTrigger>
             </TabsList>
-          </ScrollArea>
+          </div>
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

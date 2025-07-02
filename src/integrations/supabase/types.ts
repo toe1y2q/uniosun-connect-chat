@@ -319,6 +319,7 @@ export type Database = {
           amount: number
           client_id: string
           created_at: string | null
+          description: string | null
           duration: number
           flutterwave_reference: string | null
           id: string
@@ -333,6 +334,7 @@ export type Database = {
           amount: number
           client_id: string
           created_at?: string | null
+          description?: string | null
           duration: number
           flutterwave_reference?: string | null
           id?: string
@@ -347,6 +349,7 @@ export type Database = {
           amount?: number
           client_id?: string
           created_at?: string | null
+          description?: string | null
           duration?: number
           flutterwave_reference?: string | null
           id?: string

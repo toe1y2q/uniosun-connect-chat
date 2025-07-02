@@ -119,6 +119,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
           scheduled_at: scheduledAt.toISOString(),
           description: description,
           amount: amount,
+          payment_status: 'completed',
           status: 'confirmed' // Automatically confirm for successful payments
         })
         .select()
