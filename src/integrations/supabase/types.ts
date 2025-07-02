@@ -9,6 +9,50 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      appeals: {
+        Row: {
+          admin_response: string | null
+          created_at: string
+          description: string
+          id: string
+          status: string
+          subject: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          status?: string
+          subject: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          status?: string
+          subject?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appeals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           created_at: string | null
@@ -395,6 +439,7 @@ export type Database = {
           id: string
           is_verified: boolean | null
           jamb_reg: string | null
+          last_seen: string | null
           name: string
           profile_image: string | null
           quiz_score: number | null
@@ -416,6 +461,7 @@ export type Database = {
           id?: string
           is_verified?: boolean | null
           jamb_reg?: string | null
+          last_seen?: string | null
           name: string
           profile_image?: string | null
           quiz_score?: number | null
@@ -437,6 +483,7 @@ export type Database = {
           id?: string
           is_verified?: boolean | null
           jamb_reg?: string | null
+          last_seen?: string | null
           name?: string
           profile_image?: string | null
           quiz_score?: number | null

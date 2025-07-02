@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +28,9 @@ import QuizSection from '@/components/quiz/QuizSection';
 import SessionsSection from '@/components/sessions/SessionsSection';
 import ProfileSettings from '@/components/profile/ProfileSettings';
 import AvatarUpload from '@/components/profile/AvatarUpload';
+import ReviewsList from '@/components/reviews/ReviewsList';
+import AppealsForm from '@/components/appeals/AppealsForm';
+import AppealsList from '@/components/appeals/AppealsList';
 
 const StudentDashboard = () => {
   const { profile } = useAuth();
@@ -115,7 +117,6 @@ const StudentDashboard = () => {
             </div>
           </div>
 
-          {/* Status Card */}
           {!profile?.is_verified ? (
             <Card className="mb-4 sm:mb-6 border-yellow-200 bg-gradient-to-r from-yellow-50 to-yellow-100">
               <CardContent className="p-4 sm:pt-6">
@@ -159,7 +160,7 @@ const StudentDashboard = () => {
                     <p className="text-green-700 text-xs sm:text-sm">You're now able to receive session bookings and earn money as a verified tutor.</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg sm:text-2xl font-bold text-green-600">₦{profile.wallet_balance || 0}</div>
+                    <div className="text-lg sm:text-2xl font-bold text-green-600">₦{profile?.wallet_balance || 0}</div>
                     <p className="text-xs sm:text-sm text-green-600">Wallet Balance</p>
                   </div>
                 </div>
@@ -169,35 +170,32 @@ const StudentDashboard = () => {
         </motion.div>
 
         <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-green-100 h-auto p-1 text-xs sm:text-sm">
+          <TabsList className="grid w-full grid-cols-7 bg-green-100 h-auto p-1 text-xs sm:text-sm">
             <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
               <span className="hidden sm:inline">Overview</span>
               <span className="sm:hidden">Home</span>
             </TabsTrigger>
             <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">Sessions</span>
-              <span className="sm:hidden">Sessions</span>
+              Sessions
             </TabsTrigger>
             <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">Wallet</span>
-              <span className="sm:hidden">Wallet</span>
+              Wallet
             </TabsTrigger>
             <TabsTrigger value="quiz" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">Quiz</span>
-              <span className="sm:hidden">Quiz</span>
+              Quiz
+            </TabsTrigger>
+            <TabsTrigger value="reviews" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              Reviews
+            </TabsTrigger>
+            <TabsTrigger value="appeals" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              Appeals
             </TabsTrigger>
             <TabsTrigger value="profile" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">Profile</span>
-              <span className="sm:hidden">Profile</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
-              <span className="hidden sm:inline">Settings</span>
-              <span className="sm:hidden">Set</span>
+              Profile
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 sm:space-y-6">
-            {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               <Card className="border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
@@ -252,7 +250,6 @@ const StudentDashboard = () => {
               </Card>
             </div>
 
-            {/* Recent Sessions */}
             <Card className="border-green-200">
               <CardHeader className="px-3 sm:px-6">
                 <CardTitle className="flex items-center gap-2 text-green-800 text-base sm:text-lg">
@@ -315,6 +312,15 @@ const StudentDashboard = () => {
             <QuizSection />
           </TabsContent>
 
+          <TabsContent value="reviews">
+            <ReviewsList />
+          </TabsContent>
+
+          <TabsContent value="appeals" className="space-y-6">
+            <AppealsForm />
+            <AppealsList />
+          </TabsContent>
+
           <TabsContent value="profile">
             <Card className="border-green-200">
               <CardHeader>
@@ -354,10 +360,6 @@ const StudentDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <ProfileSettings />
           </TabsContent>
         </Tabs>
       </div>

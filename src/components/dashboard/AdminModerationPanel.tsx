@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
@@ -24,14 +24,17 @@ import {
   Clock,
   Search,
   UserCheck,
-  UserX
+  UserX,
+  Send
 } from 'lucide-react';
 
 const AdminModerationPanel = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedAppeal, setSelectedAppeal] = useState<any>(null);
+  const [adminResponse, setAdminResponse] = useState('');
+  const queryClient = useQueryClient();
 
-  // Fetch flagged sessions/reports
+  // Fetch flagged sessions/reports with real-time updates
   const { data: flaggedSessions, refetch: refetchFlagged } = useQuery({
     queryKey: ['flagged-sessions'],
     queryFn: async () => {
@@ -81,7 +84,7 @@ const AdminModerationPanel = () => {
     }
   });
 
-  // Fetch student performance data
+  // Fetch student performance data with real reviews
   const { data: studentPerformance } = useQuery({
     queryKey: ['student-performance'],
     queryFn: async () => {
@@ -121,8 +124,26 @@ const AdminModerationPanel = () => {
     }
   });
 
-  const handleBlockUser = async (userId: string, block: boolean) => {
-    try {
+  // Fetch all appeals for admin review
+  const { data: appeals } = useQuery({
+    queryKey: ['all-appeals'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('appeals')
+        .select(`
+          *,
+          user:users!appeals_user_id_fkey (name, email, role)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Block/unblock user mutation
+  const blockUserMutation = useMutation({
+    mutationFn: async ({ userId, block }: { userId: string; block: boolean }) => {
       const { error } = await supabase
         .from('users')
         .update({ 
@@ -131,44 +152,103 @@ const AdminModerationPanel = () => {
         .eq('id', userId);
 
       if (error) throw error;
-
+    },
+    onSuccess: (_, { block }) => {
       toast({
         title: block ? "User Blocked" : "User Unblocked",
         description: `User has been ${block ? 'blocked' : 'unblocked'} successfully`
       });
-
       refetchUsers();
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update user status",
         variant: "destructive"
       });
     }
-  };
+  });
 
-  const handleReportAction = async (reportId: string, action: 'resolved' | 'dismissed') => {
-    try {
+  // Report action mutation
+  const reportActionMutation = useMutation({
+    mutationFn: async ({ reportId, action }: { reportId: string; action: 'resolved' | 'dismissed' }) => {
       const { error } = await supabase
         .from('reports')
         .update({ status: action })
         .eq('id', reportId);
 
       if (error) throw error;
-
+    },
+    onSuccess: (_, { action }) => {
       toast({
         title: `Report ${action}`,
         description: `The report has been ${action} successfully`
       });
-
       refetchFlagged();
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update report status",
         variant: "destructive"
       });
     }
+  });
+
+  // Appeal response mutation
+  const respondToAppealMutation = useMutation({
+    mutationFn: async ({ appealId, response, status }: { appealId: string; response: string; status: string }) => {
+      const { error } = await supabase
+        .from('appeals')
+        .update({ 
+          admin_response: response,
+          status: status
+        })
+        .eq('id', appealId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Response Sent",
+        description: "Your response has been sent to the user"
+      });
+      setSelectedAppeal(null);
+      setAdminResponse('');
+      queryClient.invalidateQueries({ queryKey: ['all-appeals'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send response",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleBlockUser = (userId: string, block: boolean) => {
+    blockUserMutation.mutate({ userId, block });
+  };
+
+  const handleReportAction = (reportId: string, action: 'resolved' | 'dismissed') => {
+    reportActionMutation.mutate({ reportId, action });
+  };
+
+  const handleAppealResponse = (appealId: string, status: 'resolved' | 'rejected') => {
+    if (!adminResponse.trim()) {
+      toast({
+        title: "Response Required",
+        description: "Please provide a response before submitting",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    respondToAppealMutation.mutate({ 
+      appealId, 
+      response: adminResponse, 
+      status 
+    });
   };
 
   return (
@@ -245,6 +325,7 @@ const AdminModerationPanel = () => {
                           onClick={() => handleReportAction(report.id, 'resolved')}
                           size="sm"
                           className="bg-green-600 hover:bg-green-700"
+                          disabled={reportActionMutation.isPending}
                         >
                           <CheckCircle className="w-4 h-4 mr-1" />
                           Resolve
@@ -254,13 +335,10 @@ const AdminModerationPanel = () => {
                           variant="outline"
                           size="sm"
                           className="border-gray-300"
+                          disabled={reportActionMutation.isPending}
                         >
                           <XCircle className="w-4 h-4 mr-1" />
                           Dismiss
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-blue-600">
-                          <Eye className="w-4 h-4 mr-1" />
-                          View Session
                         </Button>
                       </div>
                     </motion.div>
@@ -354,6 +432,7 @@ const AdminModerationPanel = () => {
                             onClick={() => handleBlockUser(user.id, false)}
                             size="sm"
                             className="bg-green-600 hover:bg-green-700"
+                            disabled={blockUserMutation.isPending}
                           >
                             <UserCheck className="w-4 h-4 mr-1" />
                             Unblock
@@ -363,6 +442,7 @@ const AdminModerationPanel = () => {
                             onClick={() => handleBlockUser(user.id, true)}
                             variant="destructive"
                             size="sm"
+                            disabled={blockUserMutation.isPending}
                           >
                             <UserX className="w-4 h-4 mr-1" />
                             Block User
@@ -417,7 +497,7 @@ const AdminModerationPanel = () => {
                               {student.totalSessions} sessions
                             </span>
                             <span className="text-xs text-gray-500">
-                              ₦{(student.totalEarnings / 100).toLocaleString()} earned
+                              ₦{student.totalEarnings.toLocaleString()} earned
                             </span>
                           </div>
                         </div>
@@ -462,22 +542,111 @@ const AdminModerationPanel = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2 text-gray-700">Appeals System</h3>
-                <p className="text-gray-600 mb-4">
-                  No appeals or complaints have been submitted yet.
-                </p>
-                <div className="bg-blue-50 p-4 rounded-lg text-left max-w-md mx-auto">
-                  <h4 className="font-semibold text-blue-800 mb-2">How Appeals Work:</h4>
-                  <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• Users can submit appeals through their dashboard</li>
-                    <li>• Appeals appear here for admin review</li>
-                    <li>• Admins can respond and update appeal status</li>
-                    <li>• Users are notified of admin responses</li>
-                  </ul>
+              {appeals && appeals.length > 0 ? (
+                <div className="space-y-4">
+                  {appeals.map((appeal) => (
+                    <motion.div
+                      key={appeal.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="border border-gray-200 rounded-lg p-4"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-1">{appeal.subject}</h4>
+                          <p className="text-sm text-gray-600 mb-2">
+                            From: {appeal.user?.name} ({appeal.user?.email})
+                          </p>
+                          <Badge className={`mb-2 ${
+                            appeal.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            appeal.status === 'under_review' ? 'bg-blue-100 text-blue-800' :
+                            appeal.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {appeal.status.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {new Date(appeal.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      
+                      <p className="text-gray-700 mb-4">{appeal.description}</p>
+                      
+                      {appeal.admin_response && (
+                        <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400 mb-4">
+                          <h5 className="font-semibold text-blue-800 mb-1">Admin Response:</h5>
+                          <p className="text-sm text-blue-700">{appeal.admin_response}</p>
+                        </div>
+                      )}
+                      
+                      {appeal.status === 'pending' && (
+                        <div className="border-t pt-4">
+                          {selectedAppeal?.id === appeal.id ? (
+                            <div className="space-y-3">
+                              <Textarea
+                                placeholder="Write your response to this appeal..."
+                                value={adminResponse}
+                                onChange={(e) => setAdminResponse(e.target.value)}
+                                rows={3}
+                              />
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  onClick={() => handleAppealResponse(appeal.id, 'resolved')}
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700"
+                                  disabled={respondToAppealMutation.isPending}
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  Resolve
+                                </Button>
+                                <Button
+                                  onClick={() => handleAppealResponse(appeal.id, 'rejected')}
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-red-300 text-red-600 hover:bg-red-50"
+                                  disabled={respondToAppealMutation.isPending}
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" />
+                                  Reject
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    setSelectedAppeal(null);
+                                    setAdminResponse('');
+                                  }}
+                                  variant="ghost"
+                                  size="sm"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <Button
+                              onClick={() => setSelectedAppeal(appeal)}
+                              size="sm"
+                              variant="outline"
+                              className="border-blue-300 text-blue-600"
+                            >
+                              <Send className="w-4 h-4 mr-1" />
+                              Respond
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-12">
+                  <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2 text-gray-700">No Appeals Yet</h3>
+                  <p className="text-gray-600 mb-4">
+                    No appeals or complaints have been submitted yet.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

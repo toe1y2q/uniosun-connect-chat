@@ -8,32 +8,27 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  GraduationCap, 
   BookOpen, 
   MessageSquare, 
   Star, 
-  Users, 
   Calendar, 
-  Search, 
-  ArrowRight,
-  TrendingUp,
-  Clock,
-  Award,
-  MapPin,
+  Wallet, 
   DollarSign,
-  Settings,
+  Users,
+  Clock,
+  CheckCircle,
   User,
-  Wallet
+  Settings
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import AspirantWallet from '@/components/wallet/AspirantWallet';  
+import AspirantSessionsSection from '@/components/sessions/AspirantSessionsSection';
 import ProfileSettings from '@/components/profile/ProfileSettings';
 import AvatarUpload from '@/components/profile/AvatarUpload';
-import AspirantWallet from '@/components/wallet/AspirantWallet';
-import AspirantSessionsSection from '@/components/sessions/AspirantSessionsSection';
+import AppealsForm from '@/components/appeals/AppealsForm';
+import AppealsList from '@/components/appeals/AppealsList';
 
 const AspirantDashboard = () => {
   const { profile } = useAuth();
-  const navigate = useNavigate();
 
   // Fetch available talents for quick access
   const { data: talents } = useQuery({
@@ -57,7 +52,7 @@ const AspirantDashboard = () => {
 
   // Fetch user's sessions
   const { data: sessions } = useQuery({
-    queryKey: ['my-sessions', profile?.id],
+    queryKey: ['aspirant-sessions', profile?.id],
     queryFn: async () => {
       if (!profile?.id) return [];
       
@@ -65,11 +60,28 @@ const AspirantDashboard = () => {
         .from('sessions')
         .select(`
           *,
-          student:users!sessions_student_id_fkey (name, departments!users_department_id_fkey (name))
+          student:users!sessions_student_id_fkey (name, profile_image)
         `)
         .eq('client_id', profile.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!profile?.id
+  });
+
+  // Fetch user's transactions
+  const { data: transactions } = useQuery({
+    queryKey: ['aspirant-transactions', profile?.id],
+    queryFn: async () => {
+      if (!profile?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data;
@@ -97,13 +109,12 @@ const AspirantDashboard = () => {
     }
   });
 
-  const totalSessions = sessions?.length || 0;
+  const totalSpent = transactions?.filter(t => t.type === 'payment').reduce((sum, t) => sum + t.amount, 0) || 0;
   const completedSessions = sessions?.filter(s => s.status === 'completed').length || 0;
   const upcomingSessions = sessions?.filter(s => s.status === 'confirmed').length || 0;
-  const totalSpent = sessions?.reduce((sum, session) => sum + (session.amount || 0), 0) || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-3 sm:p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-100 p-3 sm:p-4">
       <div className="max-w-7xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -115,33 +126,37 @@ const AspirantDashboard = () => {
               <AvatarUpload size="md" showUploadButton={false} />
               <div className="min-w-0 flex-1">
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
-                  Welcome, {profile?.name}!
+                  Welcome back, {profile?.name}!
                 </h1>
                 <p className="text-sm sm:text-base text-gray-600">UNIOSUN Aspirant Dashboard</p>
               </div>
             </div>
-            <Badge className="bg-blue-100 text-blue-800 text-xs sm:text-sm self-start sm:self-center">
-              <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-              Aspirant
-            </Badge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge className="bg-blue-100 text-blue-800 text-xs sm:text-sm">
+                <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                Aspirant
+              </Badge>
+              {profile?.is_verified && (
+                <Badge className="bg-green-100 text-green-800 text-xs sm:text-sm">
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  Verified
+                </Badge>
+              )}
+            </div>
           </div>
 
-          <Card className="mb-4 sm:mb-6 border-green-200 bg-gradient-to-r from-green-50 to-green-100">
+          <Card className="mb-4 sm:mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-100">
             <CardContent className="p-4 sm:pt-6">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                <div className="p-2 sm:p-3 rounded-full bg-green-600 text-white self-start">
-                  <GraduationCap className="w-4 h-4 sm:w-6 sm:h-6" />
+                <div className="p-2 sm:p-3 rounded-full bg-blue-600 text-white self-start">
+                  <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-green-800 text-sm sm:text-base">Ready to Connect with UNIOSUN Students?</h3>
-                  <p className="text-green-700 text-xs sm:text-sm">Browse verified student talents and book study sessions to help with your university preparation.</p>
+                  <h3 className="font-semibold text-blue-800 text-sm sm:text-base">Ready to Learn?</h3>
+                  <p className="text-blue-700 text-xs sm:text-sm">Browse available tutors and book your next study session to get expert help.</p>
                 </div>
-                <Button 
-                  onClick={() => navigate('/talents')}
-                  className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2 whitespace-nowrap"
-                >
-                  Browse Talents
-                  <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2">
+                  Find Tutors
                 </Button>
               </div>
             </CardContent>
@@ -149,96 +164,87 @@ const AspirantDashboard = () => {
         </motion.div>
 
         <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-green-100 text-xs sm:text-sm h-auto p-1">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
+          <TabsList className="grid w-full grid-cols-6 bg-blue-100 h-auto p-1 text-xs sm:text-sm">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
               <span className="hidden sm:inline">Overview</span>
               <span className="sm:hidden">Home</span>
             </TabsTrigger>
-            <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
-              <Wallet className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Wallet</span>
+            <TabsTrigger value="sessions" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              Sessions
             </TabsTrigger>
-            <TabsTrigger value="talents" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
-              <span className="hidden lg:inline">Find Talents</span>
-              <span className="lg:hidden">Talents</span>
+            <TabsTrigger value="wallet" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              Wallet
             </TabsTrigger>
-            <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
-              <span className="hidden lg:inline">My Sessions</span>
-              <span className="lg:hidden">Sessions</span>
+            <TabsTrigger value="appeals" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              Appeals
             </TabsTrigger>
-            <TabsTrigger value="departments" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
-              <span className="hidden lg:inline">Departments</span>
-              <span className="lg:hidden">Depts</span>
+            <TabsTrigger value="profile" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              Profile
             </TabsTrigger>
-            <TabsTrigger value="resources" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
-              <span className="hidden lg:inline">Resources</span>
-              <span className="lg:hidden">Info</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-1 py-2 sm:px-3 sm:py-2">
-              <span className="hidden lg:inline">Settings</span>
-              <span className="lg:hidden">Set</span>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              Settings
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 sm:space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-              <Card className="border-green-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Total Sessions</CardTitle>
-                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                </CardHeader>
-                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-lg sm:text-2xl font-bold text-green-600">{totalSessions}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Booked this month
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-green-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Completed</CardTitle>
-                  <Award className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                </CardHeader>
-                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-lg sm:text-2xl font-bold text-green-600">{completedSessions}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Finished sessions
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-green-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Upcoming</CardTitle>
-                  <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                </CardHeader>
-                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-lg sm:text-2xl font-bold text-green-600">{upcomingSessions}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Scheduled sessions
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-green-200">
+              <Card className="border-blue-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
                   <CardTitle className="text-xs sm:text-sm font-medium">Total Spent</CardTitle>
-                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                  <div className="text-lg sm:text-2xl font-bold text-green-600">₦{(totalSpent / 100).toLocaleString()}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600">₦{totalSpent}</div>
                   <p className="text-xs text-muted-foreground">
-                    On tutoring
+                    On tutoring sessions
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-blue-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Sessions Attended</CardTitle>
+                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600">{completedSessions}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Learning sessions
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-blue-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Upcoming Sessions</CardTitle>
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600">{upcomingSessions}</div>
+                  <p className="text-xs text-muted-foreground">
+                    This week
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-blue-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium">Wallet Balance</CardTitle>
+                  <Wallet className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600">₦{profile?.wallet_balance || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Available balance
                   </p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Featured Talents */}
-            <Card className="border-green-200">
+            <Card className="border-blue-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-800">
+                <CardTitle className="flex items-center gap-2 text-blue-800">
                   <Star className="w-5 h-5" />
                   Featured Talents
                 </CardTitle>
@@ -250,11 +256,11 @@ const AspirantDashboard = () => {
                 {talents && talents.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {talents.slice(0, 4).map((talent) => (
-                      <Card key={talent.id} className="border-green-200 hover:border-green-300 transition-colors">
+                      <Card key={talent.id} className="border-blue-200 hover:border-blue-300 transition-colors">
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                              <span className="text-green-700 font-semibold text-sm">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <span className="text-blue-700 font-semibold text-sm">
                                 {talent.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                               </span>
                             </div>
@@ -264,7 +270,7 @@ const AspirantDashboard = () => {
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-green-600">
+                            <span className="text-blue-600">
                               {talent.quiz_score ? `${talent.quiz_score}% Quiz` : 'Verified'}
                             </span>
                             <div className="flex items-center gap-1">
@@ -278,7 +284,7 @@ const AspirantDashboard = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Star className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                    <Star className="w-12 h-12 text-blue-400 mx-auto mb-4" />
                     <p className="text-gray-600">No featured talents available at the moment</p>
                   </div>
                 )}
@@ -286,9 +292,9 @@ const AspirantDashboard = () => {
             </Card>
 
             {/* Recent Sessions */}
-            <Card className="border-green-200">
+            <Card className="border-blue-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-800">
+                <CardTitle className="flex items-center gap-2 text-blue-800">
                   <Calendar className="w-5 h-5" />
                   Recent Sessions
                 </CardTitle>
@@ -298,27 +304,27 @@ const AspirantDashboard = () => {
               </CardHeader>
               <CardContent>
                 {sessions && sessions.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {sessions.slice(0, 5).map((session) => (
-                      <div key={session.id} className="flex items-center justify-between p-4 border border-green-200 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                            <GraduationCap className="w-5 h-5 text-green-600" />
+                      <div key={session.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border border-blue-200 rounded-lg gap-2">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                           </div>
-                          <div>
-                            <h4 className="font-semibold">{session.student?.name}</h4>
-                            <p className="text-sm text-gray-600">
-                              {session.student?.departments?.name} • {new Date(session.scheduled_at).toLocaleDateString()}
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-sm sm:text-base truncate">{session.student?.name}</h4>
+                            <p className="text-xs sm:text-sm text-gray-600 truncate">
+                              {new Date(session.scheduled_at).toLocaleDateString()} • {session.duration} minutes
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold text-green-600">₦{(session.amount / 100).toLocaleString()}</span>
-                          <Badge className={
+                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+                          <span className="font-semibold text-blue-600 text-sm sm:text-base">₦{session.amount}</span>
+                          <Badge className={`text-xs ${
                             session.status === 'completed' ? 'bg-green-100 text-green-800' :
                             session.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
                             'bg-yellow-100 text-yellow-800'
-                          }>
+                          }`}>
                             {session.status}
                           </Badge>
                         </div>
@@ -326,95 +332,10 @@ const AspirantDashboard = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Calendar className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No sessions yet</h3>
-                    <p className="text-gray-600 mb-6">Book your first session with a verified student</p>
-                    <Button 
-                      onClick={() => navigate('/talents')}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      Find a Tutor
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="wallet">
-            <AspirantWallet />
-          </TabsContent>
-
-          <TabsContent value="talents">
-            <Card className="border-green-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-800">
-                  <Search className="w-5 h-5" />
-                  Browse All Talents
-                </CardTitle>
-                <CardDescription>
-                  Find the perfect student to help with your studies
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {talents && talents.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {talents.map((talent) => (
-                      <Card key={talent.id} className="border-green-200 hover:border-green-300 transition-colors hover:shadow-md">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                              <span className="text-green-700 font-semibold">
-                                {talent.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-semibold">{talent.name}</h4>
-                              <div className="flex items-center gap-2 mt-1">
-                                <MapPin className="w-3 h-3 text-gray-400" />
-                                <span className="text-sm text-gray-600">{talent.departments?.name}</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                              <span className="text-sm font-medium">4.8</span>
-                              <span className="text-xs text-gray-500">(12 reviews)</span>
-                            </div>
-                            <Badge className="bg-green-100 text-green-800">
-                              {talent.quiz_score ? `${talent.quiz_score}%` : 'Verified'}
-                            </Badge>
-                          </div>
-                          
-                          <div className="text-center">
-                            <div className="text-lg font-semibold text-green-600 mb-2">₦1,000/hour</div>
-                            <Button 
-                              onClick={() => navigate('/talents')}
-                              className="w-full bg-green-600 hover:bg-green-700 text-white"
-                              size="sm"
-                            >
-                              Book Session
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <GraduationCap className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Discover UNIOSUN Talents</h3>
-                    <p className="text-gray-600 mb-6">Browse verified students by department and expertise</p>
-                    <Button 
-                      onClick={() => navigate('/talents')}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <Search className="w-4 h-4 mr-2" />
-                      Browse Talents
-                    </Button>
+                  <div className="text-center py-6 sm:py-8">
+                    <Calendar className="w-8 h-8 sm:w-12 sm:h-12 text-blue-400 mx-auto mb-4" />
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">No sessions yet</h3>
+                    <p className="text-sm sm:text-base text-gray-600">Book your first tutoring session to get started</p>
                   </div>
                 )}
               </CardContent>
@@ -425,116 +346,51 @@ const AspirantDashboard = () => {
             <AspirantSessionsSection />
           </TabsContent>
 
-          <TabsContent value="departments">
-            <Card className="border-green-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-800">
-                  <BookOpen className="w-5 h-5" />
-                  Popular Departments
-                </CardTitle>
-                <CardDescription>
-                  Explore departments with available tutors
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {departments && departments.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {departments.map((dept) => (
-                      <Card key={dept.id} className="border-green-200 hover:border-green-300 transition-colors">
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-3 mb-3">
-                            <BookOpen className="w-8 h-8 text-green-600" />
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-sm">{dept.name}</h4>
-                              <p className="text-xs text-gray-600">{dept.studentCount} verified tutors</p>
-                            </div>
-                          </div>
-                          <Button 
-                            onClick={() => navigate('/talents')}
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full border-green-200 text-green-700 hover:bg-green-50"
-                          >
-                            Browse Tutors
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <BookOpen className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Loading departments...</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="wallet">
+            <AspirantWallet />
           </TabsContent>
 
-          <TabsContent value="resources">
-            <Card className="border-green-200">
+          <TabsContent value="appeals" className="space-y-6">
+            <AppealsForm />
+            <AppealsList />
+          </TabsContent>
+
+          <TabsContent value="profile">
+            <Card className="border-blue-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-800">
-                  <BookOpen className="w-5 h-5" />
-                  Study Resources
+                <CardTitle className="flex items-center gap-2 text-blue-800">
+                  <Users className="w-5 h-5" />
+                  Profile Information
                 </CardTitle>
                 <CardDescription>
-                  Helpful resources for UNIOSUN aspirants
+                  Your aspirant profile details
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="border-green-200">
-                    <CardContent className="p-6">
-                      <BookOpen className="w-8 h-8 text-green-600 mb-4" />
-                      <h3 className="font-semibold mb-2">Study Guides</h3>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Access comprehensive study materials and guides for UNIOSUN entrance preparation.
-                      </p>
-                      <Button variant="outline" className="border-green-200 text-green-700 hover:bg-green-50">
-                        Coming Soon
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-green-200">
-                    <CardContent className="p-6">
-                      <Users className="w-8 h-8 text-green-600 mb-4" />
-                      <h3 className="font-semibold mb-2">Study Groups</h3>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Join study groups with other aspirants and get group tutoring sessions.
-                      </p>
-                      <Button variant="outline" className="border-green-200 text-green-700 hover:bg-green-50">
-                        Coming Soon
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-green-200">
-                    <CardContent className="p-6">
-                      <MessageSquare className="w-8 h-8 text-green-600 mb-4" />
-                      <h3 className="font-semibold mb-2">Past Questions</h3>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Practice with past UNIOSUN entrance examination questions and answers.
-                      </p>
-                      <Button variant="outline" className="border-green-200 text-green-700 hover:bg-green-50">
-                        Coming Soon
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-green-200">
-                    <CardContent className="p-6">
-                      <TrendingUp className="w-8 h-8 text-green-600 mb-4" />
-                      <h3 className="font-semibold mb-2">Progress Tracking</h3>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Monitor your learning progress and track your improvement over time.
-                      </p>
-                      <Button variant="outline" className="border-green-200 text-green-700 hover:bg-green-50">
-                        Coming Soon
-                      </Button>
-                    </CardContent>
-                  </Card>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-6 mb-6">
+                  <AvatarUpload size="lg" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">{profile?.name}</h3>
+                    <p className="text-gray-600">{profile?.email}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Full Name</label>
+                    <p className="mt-1 text-gray-900">{profile?.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Email</label>
+                    <p className="mt-1 text-gray-900">{profile?.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Account Type</label>
+                    <p className="mt-1 text-gray-900">JAMB Aspirant</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Status</label>
+                    <p className="mt-1 text-gray-900">{profile?.is_verified ? 'Verified' : 'Pending'}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
