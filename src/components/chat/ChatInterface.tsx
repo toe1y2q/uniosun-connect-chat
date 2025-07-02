@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,31 @@ interface ChatInterfaceProps {
 interface ReviewFormData {
   rating: number;
   comment: string;
+}
+
+interface RepliedToMessage {
+  id: string;
+  message: string;
+  sender: {
+    name: string;
+  };
+}
+
+interface ChatMessage {
+  id: string;
+  message: string;
+  sender_id: string;
+  session_id: string;
+  created_at: string;
+  is_flagged: boolean;
+  flagged_reason: string | null;
+  replied_to: string | null;
+  sender: {
+    id: string;
+    name: string;
+    profile_image: string | null;
+  };
+  replied_to_data?: RepliedToMessage;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
@@ -112,14 +138,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
         .from('chat_messages')
         .select(`
           *,
-          sender:users!chat_messages_sender_id_fkey (id, name, profile_image),
-          replied_to:chat_messages!chat_messages_replied_to_fkey (id, message, sender:users!chat_messages_sender_id_fkey (name))
+          sender:users!chat_messages_sender_id_fkey (id, name, profile_image)
         `)
         .eq('session_id', sessionId)
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data;
+
+      // Fetch replied-to messages separately and merge them
+      const messagesWithReplies: ChatMessage[] = [];
+      for (const msg of data) {
+        const messageWithReply: ChatMessage = { ...msg };
+        
+        if (msg.replied_to) {
+          const { data: repliedMsg } = await supabase
+            .from('chat_messages')
+            .select(`
+              id,
+              message,
+              sender:users!chat_messages_sender_id_fkey (name)
+            `)
+            .eq('id', msg.replied_to)
+            .single();
+          
+          if (repliedMsg) {
+            messageWithReply.replied_to_data = repliedMsg as RepliedToMessage;
+          }
+        }
+        
+        messagesWithReplies.push(messageWithReply);
+      }
+      
+      return messagesWithReplies;
     },
     enabled: !!sessionId
   });
@@ -447,10 +497,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
                     </div>
                   )}
 
-                  {msg.replied_to && (
+                  {msg.replied_to_data && (
                     <div className="text-xs text-gray-500 mb-1 p-2 bg-gray-100 rounded border-l-2 border-gray-300">
-                      <div className="font-medium">{msg.replied_to.sender?.name}</div>
-                      <div className="truncate">{msg.replied_to.message}</div>
+                      <div className="font-medium">{msg.replied_to_data.sender?.name}</div>
+                      <div className="truncate">{msg.replied_to_data.message}</div>
                     </div>
                   )}
                   
@@ -576,3 +626,4 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
 };
 
 export default ChatInterface;
+
