@@ -361,45 +361,10 @@ const StudentDashboard = () => {
             <AppealsList />
           </TabsContent>
 
-          <TabsContent value="profile">
-            <Card className="border-green-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-800">
-                  <Users className="w-5 h-5" />
-                  Profile Information
-                </CardTitle>
-                <CardDescription>
-                  Your student profile details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-6 mb-6">
-                  <AvatarUpload size="lg" />
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold">{profile?.name}</h3>
-                    <p className="text-gray-600">{profile?.email}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Full Name</label>
-                    <p className="mt-1 text-gray-900">{profile?.name}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Email</label>
-                    <p className="mt-1 text-gray-900">{profile?.email}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">JAMB Registration</label>
-                    <p className="mt-1 text-gray-900">{profile?.jamb_reg || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Quiz Score</label>
-                    <p className="mt-1 text-gray-900">{profile?.quiz_score ? `${profile.quiz_score}%` : 'Not taken'}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="profile" className="space-y-0">
+            <div className="w-full">
+              <ProfileSettings />
+            </div>
           </TabsContent>
         </Tabs>
       </div>

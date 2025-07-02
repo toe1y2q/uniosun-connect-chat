@@ -391,49 +391,27 @@ const AspirantDashboard = () => {
             <AppealsList />
           </TabsContent>
 
-          <TabsContent value="profile">
+          <TabsContent value="profile" className="space-y-0">
+            <div className="w-full">
+              <ProfileSettings />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4">
             <Card className="border-green-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-800">
-                  <Users className="w-5 h-5" />
-                  Profile Information
+                  <Settings className="w-5 h-5" />
+                  Account Settings
                 </CardTitle>
                 <CardDescription>
-                  Your aspirant profile details
+                  Manage your account preferences and security
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-6 mb-6">
-                  <AvatarUpload size="lg" />
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold">{profile?.name}</h3>
-                    <p className="text-gray-600">{profile?.email}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Full Name</label>
-                    <p className="mt-1 text-gray-900">{profile?.name}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Email</label>
-                    <p className="mt-1 text-gray-900">{profile?.email}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Account Type</label>
-                    <p className="mt-1 text-gray-900">JAMB Aspirant</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Status</label>
-                    <p className="mt-1 text-gray-900">{profile?.is_verified ? 'Verified' : 'Pending'}</p>
-                  </div>
-                </div>
+              <CardContent className="space-y-4 p-4 sm:p-6">
+                <p className="text-sm text-gray-600">Settings panel coming soon...</p>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <ProfileSettings />
           </TabsContent>
         </Tabs>
       </div>

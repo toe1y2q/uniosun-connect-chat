@@ -50,8 +50,8 @@ const ProfileSettings = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
         <User className="w-6 h-6 text-green-600" />
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
@@ -80,7 +80,7 @@ const ProfileSettings = () => {
             Update your personal details and contact information
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 p-4 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -128,7 +128,7 @@ const ProfileSettings = () => {
               Add your banking details for payment processing
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 sm:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="account_name">Account Name</Label>

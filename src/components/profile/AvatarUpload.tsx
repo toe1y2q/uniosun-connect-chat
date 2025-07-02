@@ -6,6 +6,7 @@ import { Upload, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import ImageDialog from '@/components/ui/image-dialog';
 
 interface AvatarUploadProps {
   size?: 'sm' | 'md' | 'lg';
@@ -15,6 +16,7 @@ interface AvatarUploadProps {
 const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'lg', showUploadButton = true }) => {
   const { user, profile, updateProfile } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
 
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -104,11 +106,15 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'lg', showUploadButt
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="relative">
-        <Avatar className={`${getSizeClasses()} border-4 border-green-200`}>
+        <Avatar 
+          className={`${getSizeClasses()} border-4 border-green-200 cursor-pointer hover:opacity-80 transition-opacity`}
+          onClick={() => setImageDialogOpen(true)}
+        >
           <AvatarImage 
             src={profile?.profile_image} 
             alt={profile?.name || 'User avatar'}
             key={profile?.profile_image} // Force re-render when URL changes
+            className="object-cover"
           />
           <AvatarFallback className="bg-green-100 text-green-600 text-xl">
             {profile?.name?.split(' ').map(n => n[0]).join('') || 'U'}
@@ -145,6 +151,14 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ size = 'lg', showUploadButt
           {uploading ? 'Uploading...' : 'Change Avatar'}
         </Button>
       )}
+
+      <ImageDialog
+        isOpen={imageDialogOpen}
+        onClose={() => setImageDialogOpen(false)}
+        imageSrc={profile?.profile_image}
+        imageAlt={profile?.name || 'User avatar'}
+        fallbackText={profile?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+      />
     </div>
   );
 };
