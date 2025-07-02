@@ -91,7 +91,7 @@ const StudentDashboard = () => {
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-              <AvatarUpload size="sm" showUploadButton={false} className="flex-shrink-0" />
+              <AvatarUpload size="sm" showUploadButton={false} />
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
                   Welcome back, {profile?.name}!

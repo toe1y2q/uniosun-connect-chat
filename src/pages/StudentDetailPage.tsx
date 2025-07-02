@@ -47,7 +47,8 @@ const StudentDetailPage = () => {
         .from('reviews')
         .select(`
           *,
-          sessions!inner(student_id)
+          sessions!inner(student_id),
+          reviewer:users!reviews_reviewer_id_fkey(name)
         `)
         .eq('sessions.student_id', id);
       

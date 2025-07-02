@@ -116,7 +116,7 @@ const AspirantDashboard = () => {
   const upcomingSessions = sessions?.filter(s => s.status === 'confirmed').length || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-100 p-2 sm:p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -125,7 +125,7 @@ const AspirantDashboard = () => {
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-              <AvatarUpload size="sm" showUploadButton={false} className="flex-shrink-0" />
+              <AvatarUpload size="sm" showUploadButton={false} />
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
                   Welcome back, {profile?.name}!
@@ -134,7 +134,7 @@ const AspirantDashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-1 flex-wrap">
-              <Badge className="bg-blue-100 text-blue-800 text-xs px-2 py-1">
+              <Badge className="bg-green-100 text-green-800 text-xs px-2 py-1">
                 <BookOpen className="w-3 h-3 mr-1" />
                 Aspirant
               </Badge>
@@ -147,19 +147,19 @@ const AspirantDashboard = () => {
             </div>
           </div>
 
-          <Card className="mb-3 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-100">
+          <Card className="mb-3 border-green-200 bg-gradient-to-r from-green-50 to-green-100">
             <CardContent className="p-3">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <div className="flex items-center gap-2 flex-1">
-                  <div className="p-2 rounded-full bg-blue-600 text-white">
+                  <div className="p-2 rounded-full bg-green-600 text-white">
                     <BookOpen className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-blue-800 text-sm">Ready to Learn?</h3>
-                    <p className="text-blue-700 text-xs">Browse available tutors and book your next study session to get expert help.</p>
+                    <h3 className="font-semibold text-green-800 text-sm">Ready to Learn?</h3>
+                    <p className="text-green-700 text-xs">Browse available tutors and book your next study session to get expert help.</p>
                   </div>
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 w-full sm:w-auto">
+                <Button className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-2 w-full sm:w-auto">
                   Find Tutors
                 </Button>
               </div>
@@ -169,23 +169,23 @@ const AspirantDashboard = () => {
 
         <Tabs defaultValue="overview" className="space-y-4">
           <ScrollArea className="w-full">
-            <TabsList className="flex w-max min-w-full bg-blue-100 h-auto p-1 gap-1">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+            <TabsList className="flex w-max min-w-full bg-green-100 h-auto p-1 gap-1 overflow-x-auto scrollbar-hide">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="sessions" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+              <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
                 Sessions
               </TabsTrigger>
-              <TabsTrigger value="wallet" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+              <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
                 Wallet
               </TabsTrigger>
-              <TabsTrigger value="appeals" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+              <TabsTrigger value="appeals" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
                 Appeals
               </TabsTrigger>
-              <TabsTrigger value="profile" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+              <TabsTrigger value="profile" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
                 Profile
               </TabsTrigger>
-              <TabsTrigger value="settings" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
+              <TabsTrigger value="settings" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap">
                 Settings
               </TabsTrigger>
             </TabsList>
@@ -193,52 +193,52 @@ const AspirantDashboard = () => {
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <Card className="border-blue-200">
+              <Card className="border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
                   <CardTitle className="text-xs font-medium">Total Spent</CardTitle>
-                  <DollarSign className="h-3 w-3 text-blue-600" />
+                  <DollarSign className="h-3 w-3 text-green-600" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-blue-600">₦{totalSpent}</div>
+                  <div className="text-lg font-bold text-green-600">₦{(totalSpent / 100).toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground">
                     On tutoring sessions
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-blue-200">
+              <Card className="border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
                   <CardTitle className="text-xs font-medium">Sessions Attended</CardTitle>
-                  <CheckCircle className="h-3 w-3 text-blue-600" />
+                  <CheckCircle className="h-3 w-3 text-green-600" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-blue-600">{completedSessions}</div>
+                  <div className="text-lg font-bold text-green-600">{completedSessions}</div>
                   <p className="text-xs text-muted-foreground">
                     Learning sessions
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-blue-200">
+              <Card className="border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
                   <CardTitle className="text-xs font-medium">Upcoming Sessions</CardTitle>
-                  <Calendar className="h-3 w-3 text-blue-600" />
+                  <Calendar className="h-3 w-3 text-green-600" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-blue-600">{upcomingSessions}</div>
+                  <div className="text-lg font-bold text-green-600">{upcomingSessions}</div>
                   <p className="text-xs text-muted-foreground">
                     This week
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-blue-200">
+              <Card className="border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
                   <CardTitle className="text-xs font-medium">Wallet Balance</CardTitle>
-                  <Wallet className="h-3 w-3 text-blue-600" />
+                  <Wallet className="h-3 w-3 text-green-600" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-blue-600">₦{profile?.wallet_balance || 0}</div>
+                  <div className="text-lg font-bold text-green-600">₦{((profile?.wallet_balance || 0) / 100).toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground">
                     Available balance
                   </p>
@@ -247,9 +247,9 @@ const AspirantDashboard = () => {
             </div>
 
             {/* Featured Talents */}
-            <Card className="border-blue-200">
+            <Card className="border-green-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-800">
+                <CardTitle className="flex items-center gap-2 text-green-800">
                   <Star className="w-5 h-5" />
                   Featured Talents
                 </CardTitle>
@@ -261,11 +261,11 @@ const AspirantDashboard = () => {
                 {talents && talents.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {talents.slice(0, 4).map((talent) => (
-                      <Card key={talent.id} className="border-blue-200 hover:border-blue-300 transition-colors">
+                      <Card key={talent.id} className="border-green-200 hover:border-green-300 transition-colors">
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <span className="text-blue-700 font-semibold text-sm">
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                              <span className="text-green-700 font-semibold text-sm">
                                 {talent.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                               </span>
                             </div>
@@ -275,7 +275,7 @@ const AspirantDashboard = () => {
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-blue-600">
+                            <span className="text-green-600">
                               {talent.quiz_score ? `${talent.quiz_score}% Quiz` : 'Verified'}
                             </span>
                             <div className="flex items-center gap-1">
@@ -289,7 +289,7 @@ const AspirantDashboard = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Star className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                    <Star className="w-12 h-12 text-green-400 mx-auto mb-4" />
                     <p className="text-gray-600">No featured talents available at the moment</p>
                   </div>
                 )}
@@ -297,9 +297,9 @@ const AspirantDashboard = () => {
             </Card>
 
             {/* Recent Sessions */}
-            <Card className="border-blue-200">
+            <Card className="border-green-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-800">
+                <CardTitle className="flex items-center gap-2 text-green-800">
                   <Calendar className="w-5 h-5" />
                   Recent Sessions
                 </CardTitle>
@@ -311,10 +311,10 @@ const AspirantDashboard = () => {
                 {sessions && sessions.length > 0 ? (
                   <div className="space-y-3">
                     {sessions.slice(0, 5).map((session) => (
-                      <div key={session.id} className="flex flex-col gap-2 p-3 border border-blue-200 rounded-lg">
+                      <div key={session.id} className="flex flex-col gap-2 p-3 border border-green-200 rounded-lg">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                            <Users className="w-4 h-4 text-blue-600" />
+                          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                            <Users className="w-4 h-4 text-green-600" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <h4 className="font-semibold text-sm truncate">{session.student?.name}</h4>
@@ -324,10 +324,10 @@ const AspirantDashboard = () => {
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-blue-600 text-sm">₦{session.amount}</span>
+                          <span className="font-semibold text-green-600 text-sm">₦{(session.amount / 100).toLocaleString()}</span>
                           <Badge className={`text-xs px-2 py-1 ${
                             session.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            session.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                            session.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                             'bg-yellow-100 text-yellow-800'
                           }`}>
                             {session.status}
@@ -338,7 +338,7 @@ const AspirantDashboard = () => {
                   </div>
                 ) : (
                   <div className="text-center py-6">
-                    <Calendar className="w-8 h-8 text-blue-400 mx-auto mb-4" />
+                    <Calendar className="w-8 h-8 text-green-400 mx-auto mb-4" />
                     <h3 className="text-base font-semibold mb-2">No sessions yet</h3>
                     <p className="text-sm text-gray-600">Book your first tutoring session to get started</p>
                   </div>
@@ -361,9 +361,9 @@ const AspirantDashboard = () => {
           </TabsContent>
 
           <TabsContent value="profile">
-            <Card className="border-blue-200">
+            <Card className="border-green-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-800">
+                <CardTitle className="flex items-center gap-2 text-green-800">
                   <Users className="w-5 h-5" />
                   Profile Information
                 </CardTitle>

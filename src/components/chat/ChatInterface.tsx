@@ -290,7 +290,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
   // Submit review mutation
   const submitReviewMutation = useMutation({
     mutationFn: async (review: ReviewFormData) => {
-      const { error } = await supabase
+      // Insert review
+      const { error: reviewError } = await supabase
         .from('reviews')
         .insert({
           session_id: sessionId,
@@ -299,10 +300,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
           comment: review.comment
         });
       
-      if (error) throw error;
+      if (reviewError) throw reviewError;
+
+      // Release payment to student immediately
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: session?.student_id!,
+          type: 'earning',
+          amount: session?.amount!,
+          status: 'completed',
+          description: `Payment for tutoring session - ${session?.duration} minutes`,
+          session_id: sessionId
+        });
+
+      if (transactionError) throw transactionError;
     },
     onSuccess: () => {
-      toast.success('Review submitted successfully! Payment will be released to the student.');
+      toast.success('Review submitted successfully! Payment has been released to the student.');
       setReviewSubmitted(true);
       setShowReviewForm(false);
       queryClient.invalidateQueries({ queryKey: ['review', sessionId] });
@@ -339,7 +354,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
 
   // Block navigation if review is required but not submitted
   const handleBackNavigation = () => {
-    if (sessionExpired && profile?.role === 'aspirant' && !existingReview && !reviewSubmitted) {
+    if (profile?.role === 'aspirant' && !existingReview && !reviewSubmitted && 
+        (sessionExpired || session?.status === 'completed')) {
       toast.error('Please submit your review before leaving. This is required to release payment to the student.');
       setShowReviewForm(true);
       return;
@@ -351,6 +367,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
       navigate('/dashboard');
     }
   };
+
+  // Force review popup when session completes or when component unmounts
+  useEffect(() => {
+    if (session?.status === 'completed' && profile?.role === 'aspirant' && 
+        !existingReview && !reviewSubmitted && !showReviewForm) {
+      setShowReviewForm(true);
+    }
+  }, [session?.status, profile?.role, existingReview, reviewSubmitted, showReviewForm]);
 
   useEffect(() => {
     scrollToBottom();

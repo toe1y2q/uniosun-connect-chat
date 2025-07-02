@@ -35,8 +35,11 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
       
       const { data, error } = await supabase
         .from('reviews')
-        .select('*')
-        .eq('tutor_id', student.id)
+        .select(`
+          *,
+          sessions!inner(student_id)
+        `)
+        .eq('sessions.student_id', student.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -50,9 +53,17 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
     setShowPayment(true);
   };
 
+  const getSessionAmount = () => {
+    const durationInMinutes = parseInt(duration);
+    if (durationInMinutes === 30) return 100000; // ₦1,000 in kobo
+    if (durationInMinutes === 60) return 150000; // ₦1,500 in kobo
+    if (durationInMinutes === 90) return 200000; // ₦2,000 in kobo
+    return 100000; // Default to ₦1,000
+  };
+
   const handlePaymentSuccess = async () => {
     const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
-    const amount = (parseInt(duration) / 30) * 500;
+    const amount = getSessionAmount();
 
     try {
       const { data, error } = await supabase
@@ -224,10 +235,9 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
                         className="w-full p-2 border border-gray-300 rounded-md"
                         required
                       >
-                        <option value="30">30 minutes - ₦500</option>
-                        <option value="60">60 minutes - ₦1000</option>
-                        <option value="90">90 minutes - ₦1500</option>
-                        <option value="120">120 minutes - ₦2000</option>
+                        <option value="30">30 minutes - ₦1,000</option>
+                        <option value="60">60 minutes - ₦1,500</option>
+                        <option value="90">90 minutes - ₦2,000</option>
                       </select>
                     </div>
 
@@ -286,11 +296,11 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
                       </div>
                       <div className="flex justify-between">
                         <span>Rate:</span>
-                        <span>₦{(parseInt(duration) / 30) * 500}/session</span>
+                        <span>₦{(getSessionAmount() / 100).toLocaleString()}/session</span>
                       </div>
                       <div className="flex justify-between font-semibold text-lg border-t pt-2">
                         <span>Total:</span>
-                        <span>₦{(parseInt(duration) / 30) * 500}</span>
+                        <span>₦{(getSessionAmount() / 100).toLocaleString()}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -307,9 +317,11 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
               </form>
             ) : (
               <PaymentSelector
-                amount={(parseInt(duration) / 30) * 500}
-                onPaymentSuccess={handlePaymentSuccess}
-                onCancel={() => setShowPayment(false)}
+                walletBalance={profile?.wallet_balance || 0}
+                sessionAmount={getSessionAmount()}
+                onWalletPayment={handlePaymentSuccess}
+                onFlutterwavePayment={handlePaymentSuccess}
+                isProcessing={false}
               />
             )}
           </TabsContent>

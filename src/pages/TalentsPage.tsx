@@ -210,7 +210,6 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
             setShowBookingModal(false);
             setSelectedStudent(null);
           }}
-          onAuthRequired={onAuthRequired}
         />
       )}
     </div>

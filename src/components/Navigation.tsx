@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/auth/AuthContext';
 import { LogOut, User, Award, Home, Eye, Shield, BookOpen } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 const Navigation = () => {
   const { profile, signOut } = useAuth();
@@ -61,6 +62,7 @@ const Navigation = () => {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
+          <NotificationBell />
           <div className="flex items-center gap-2 md:gap-3">
             <Avatar className="h-7 w-7 md:h-8 md:w-8 border-2 border-green-200">
               <AvatarImage src={profile?.profile_image} />
