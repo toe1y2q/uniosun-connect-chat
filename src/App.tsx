@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +11,6 @@ import AspirantDashboard from "@/components/dashboard/AspirantDashboard";
 import Navigation from "@/components/Navigation";
 import HomePage from "@/pages/HomePage";
 import TalentsPage from "@/pages/TalentsPage";
-import StudentDetailPage from "@/pages/StudentDetailPage";
 import ProfileSettingsPage from "@/pages/ProfileSettingsPage";
 import AdminPage from "@/pages/AdminPage";
 import QuizPage from "@/pages/QuizPage";
@@ -67,9 +67,6 @@ const AppContent = () => {
       <Route path="/talents" element={
         <TalentsPage onAuthRequired={() => setShowAuth(true)} />
       } />
-
-      {/* Student Detail Route */}
-      <Route path="/student/:studentId" element={<StudentDetailPage />} />
       
       <Route path="/auth" element={
         user ? (
