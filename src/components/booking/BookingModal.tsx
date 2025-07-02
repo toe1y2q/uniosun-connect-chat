@@ -80,7 +80,11 @@ const BookingModal: React.FC<BookingModalProps> = ({
     toast.success('Session booked successfully!');
   };
 
-  const sessionAmount = formData.duration * 100; // ₦100 per minute
+  const getSessionAmount = (duration: number) => {
+    return duration === 30 ? 1000 : duration === 60 ? 1500 : duration * 25;
+  };
+  
+  const sessionAmount = getSessionAmount(formData.duration);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -179,10 +183,10 @@ const BookingModal: React.FC<BookingModalProps> = ({
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-green-600">
-                        ₦{(sessionAmount / 100).toLocaleString()}
+                        ₦{sessionAmount.toLocaleString()}
                       </div>
                       <div className="text-xs text-green-600">
-                        ₦100 per minute
+                        {formData.duration === 30 ? '₦1,000 for 30 min' : formData.duration === 60 ? '₦1,500 for 60 min' : `₦${Math.round(sessionAmount/formData.duration)} per minute`}
                       </div>
                     </div>
                   </div>
@@ -203,11 +207,10 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
         {step === 'payment' && (
           <PaymentProcessor
-            amount={sessionAmount}
             sessionData={{
-              student_id: student.id,
+              studentId: student.id,
               duration: formData.duration,
-              scheduled_at: formData.scheduled_at,
+              scheduledAt: formData.scheduled_at,
               description: formData.description
             }}
             onSuccess={handlePaymentSuccess}
@@ -250,7 +253,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                   <div className="flex justify-between">
                     <span className="text-gray-600">Amount Paid:</span>
                     <span className="font-bold text-green-600">
-                      ₦{(sessionAmount / 100).toLocaleString()}
+                      ₦{sessionAmount.toLocaleString()}
                     </span>
                   </div>
                 </div>

@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
-import { FlutterwaveConfig } from 'flutterwave-react-v3';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -30,7 +29,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
 
   // Calculate amount based on duration
   const getAmount = (duration: number) => {
-    return duration === 30 ? 1000 : 1500; // ₦1,000 for 30 min, ₦1,500 for 60 min
+    return duration === 30 ? 1000 : duration === 60 ? 1500 : duration * 25; // ₦1,000 for 30 min, ₦1,500 for 60 min
   };
 
   const amount = getAmount(sessionData.duration);
@@ -39,7 +38,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
     return <div>Please log in to make payment</div>;
   }
 
-  const config: FlutterwaveConfig = {
+  const config = {
     public_key: 'FLWPUBK-08518f8d77cbc2a7fbdd880c432bd85f-X',
     tx_ref: `session_${Date.now()}_${user.id}`,
     amount,
@@ -47,8 +46,8 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
     payment_options: 'card,mobilemoney,ussd',
     customer: {
       email: user.email,
-      phone_number: user.phone_number || '',
-      name: user.name,
+      phone_number: '',
+      name: user.email,
     },
     customizations: {
       title: 'Tutoring Session Payment',

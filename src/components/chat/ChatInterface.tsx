@@ -111,6 +111,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, onBack }) => {
     
     const updateTimer = () => {
       const now = new Date();
+      
+      // If session hasn't started yet, show time until start
+      if (now < sessionStart) {
+        setTimeLeft(Math.floor((sessionStart.getTime() - now.getTime()) / 1000));
+        return;
+      }
+      
+      // If session is ongoing, show remaining time
       const remaining = Math.max(0, sessionEnd.getTime() - now.getTime());
       
       if (remaining === 0 && !sessionEnded) {
