@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -10,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, Star, Clock, Calendar, GraduationCap, MapPin, MessageCircle, Award } from 'lucide-react';
 import BookingModal from '@/components/booking/BookingModal';
+import { toast } from 'sonner';
 
 const StudentDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,6 +67,11 @@ const StudentDetailPage = () => {
 
   // Simulate response time (in real app, this would come from actual data)
   const responseTime = "< 2 hours";
+
+  const handleBookingSuccess = () => {
+    toast.success('Session booked successfully!');
+    // Optionally refresh data or navigate
+  };
 
   if (isLoading) {
     return (
@@ -297,6 +304,7 @@ const StudentDetailPage = () => {
           student={student}
           isOpen={showBookingModal}
           onClose={() => setShowBookingModal(false)}
+          onBookingSuccess={handleBookingSuccess}
         />
       )}
     </div>

@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import BookingModal from '@/components/booking/BookingModal';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface TalentsPageProps {
   onAuthRequired?: () => void;
@@ -54,6 +55,11 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
 
   const handleGoBack = () => {
     navigate(-1); // Go back to previous page
+  };
+
+  const handleBookingSuccess = () => {
+    toast.success('Session booked successfully!');
+    // Optionally refresh talents data or navigate
   };
 
   if (isLoading) {
@@ -210,6 +216,7 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
             setShowBookingModal(false);
             setSelectedStudent(null);
           }}
+          onBookingSuccess={handleBookingSuccess}
         />
       )}
     </div>
