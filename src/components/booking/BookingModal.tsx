@@ -171,7 +171,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
 
       setSessionData({ ...session, student });
       setShowCongratulations(true);
-      toast.success('Payment successful! Session booked.');
+      toast.success('Payment successful! Session booked from wallet.');
     } catch (error) {
       console.error('Wallet payment error:', error);
       toast.error('Payment failed. Please try again.');
@@ -236,7 +236,7 @@ const BookingModal = ({ isOpen, onClose, student }: BookingModalProps) => {
 
       setSessionData({ ...session, student });
       setShowCongratulations(true);
-      toast.success('Payment successful! Session booked.');
+      toast.success('Payment successful! Session booked via Flutterwave.');
     } catch (error) {
       console.error('Flutterwave payment error:', error);
       toast.error('Payment failed. Please try again.');
