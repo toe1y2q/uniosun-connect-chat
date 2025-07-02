@@ -51,11 +51,11 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
       description: `Payment for ${sessionData.duration} minute tutoring session`,
       logo: '',
     },
-    meta: [
-      { metaname: 'rave_escrow_tx', metavalue: '1' },
-      { metaname: 'session_type', metavalue: 'tutoring' },
-      { metaname: 'duration', metavalue: sessionData.duration.toString() }
-    ],
+    meta: {
+      rave_escrow_tx: '1',
+      session_type: 'tutoring',
+      duration: sessionData.duration.toString()
+    },
   };
 
   const handleFlutterPayment = useFlutterwave(config);
