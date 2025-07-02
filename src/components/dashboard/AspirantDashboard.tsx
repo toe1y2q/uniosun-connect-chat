@@ -29,6 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import ProfileSettings from '@/components/profile/ProfileSettings';
 import AvatarUpload from '@/components/profile/AvatarUpload';
 import AspirantWallet from '@/components/wallet/AspirantWallet';
+import AspirantSessionsSection from '@/components/sessions/AspirantSessionsSection';
 
 const AspirantDashboard = () => {
   const { profile } = useAuth();
@@ -102,7 +103,7 @@ const AspirantDashboard = () => {
   const totalSpent = sessions?.reduce((sum, session) => sum + (session.amount || 0), 0) || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-3 sm:p-4">
       <div className="max-w-7xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -147,18 +148,36 @@ const AspirantDashboard = () => {
           </Card>
         </motion.div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-green-100">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Overview</TabsTrigger>
-            <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
-              <Wallet className="w-4 h-4 mr-1" />
-              Wallet
+        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-7 bg-green-100 text-xs sm:text-sm h-auto p-1">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              <span className="hidden sm:inline">Overview</span>
+              <span className="sm:hidden">Home</span>
             </TabsTrigger>
-            <TabsTrigger value="talents" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Find Talents</TabsTrigger>
-            <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">My Sessions</TabsTrigger>
-            <TabsTrigger value="departments" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Departments</TabsTrigger>
-            <TabsTrigger value="resources" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Resources</TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Settings</TabsTrigger>
+            <TabsTrigger value="wallet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              <Wallet className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Wallet</span>
+            </TabsTrigger>
+            <TabsTrigger value="talents" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              <span className="hidden sm:inline">Find Talents</span>
+              <span className="sm:hidden">Talents</span>
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              <span className="hidden sm:inline">My Sessions</span>
+              <span className="sm:hidden">Sessions</span>
+            </TabsTrigger>
+            <TabsTrigger value="departments" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              <span className="hidden sm:inline">Departments</span>
+              <span className="sm:hidden">Depts</span>
+            </TabsTrigger>
+            <TabsTrigger value="resources" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              <span className="hidden sm:inline">Resources</span>
+              <span className="sm:hidden">Info</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-2 py-2 sm:px-3 sm:py-2">
+              <span className="hidden sm:inline">Settings</span>
+              <span className="sm:hidden">Set</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -208,7 +227,7 @@ const AspirantDashboard = () => {
                   <DollarSign className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">₦{totalSpent}</div>
+                  <div className="text-2xl font-bold text-green-600">₦{(totalSpent / 100).toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground">
                     On tutoring
                   </p>
@@ -294,7 +313,7 @@ const AspirantDashboard = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="font-semibold text-green-600">₦{session.amount}</span>
+                          <span className="font-semibold text-green-600">₦{(session.amount / 100).toLocaleString()}</span>
                           <Badge className={
                             session.status === 'completed' ? 'bg-green-100 text-green-800' :
                             session.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
@@ -403,67 +422,7 @@ const AspirantDashboard = () => {
           </TabsContent>
 
           <TabsContent value="sessions">
-            <Card className="border-green-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-800">
-                  <Calendar className="w-5 h-5" />
-                  My Sessions
-                </CardTitle>
-                <CardDescription>
-                  Track your booked sessions and study progress
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {sessions && sessions.length > 0 ? (
-                  <div className="space-y-4">
-                    {sessions.map((session) => (
-                      <div key={session.id} className="flex items-center justify-between p-4 border border-green-200 rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                            <GraduationCap className="w-6 h-6 text-green-600" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold">{session.student?.name}</h4>
-                            <p className="text-sm text-gray-600">
-                              {session.student?.departments?.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(session.scheduled_at).toLocaleDateString()} • {session.duration} minutes
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <div className="font-semibold text-green-600">₦{session.amount}</div>
-                            <div className="text-xs text-gray-500">{session.duration} mins</div>
-                          </div>
-                          <Badge className={
-                            session.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            session.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                            session.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }>
-                            {session.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Calendar className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No sessions yet</h3>
-                    <p className="text-gray-600 mb-6">Book your first session with a verified student</p>
-                    <Button 
-                      onClick={() => navigate('/talents')}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      Find a Tutor
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <AspirantSessionsSection />
           </TabsContent>
 
           <TabsContent value="departments">

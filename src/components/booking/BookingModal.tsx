@@ -32,8 +32,26 @@ const BookingModal = ({ isOpen, onClose, student, onAuthRequired }: BookingModal
     date: '',
     time: '',
     duration: '60',
-    amount: profile?.role === 'aspirant' ? 1000 : 1500
+    amount: 1500 // 1 hour = 1500, will be updated based on duration
   });
+
+  // Update amount based on duration
+  React.useEffect(() => {
+    const duration = parseInt(bookingData.duration);
+    let newAmount = 1500; // Default 1 hour
+    
+    if (duration === 30) {
+      newAmount = 1000; // 30 minutes
+    } else if (duration === 60) {
+      newAmount = 1500; // 1 hour
+    } else if (duration === 90) {
+      newAmount = 2250; // 1.5 hours
+    } else if (duration === 120) {
+      newAmount = 3000; // 2 hours
+    }
+    
+    setBookingData(prev => ({ ...prev, amount: newAmount }));
+  }, [bookingData.duration]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
 

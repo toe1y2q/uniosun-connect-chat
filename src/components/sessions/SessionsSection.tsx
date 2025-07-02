@@ -8,9 +8,11 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar, Clock, MessageSquare, CheckCircle, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const SessionsSection = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
 
   const { data: sessions, isLoading } = useQuery({
     queryKey: ['student-sessions', profile?.id],
@@ -167,7 +169,11 @@ const SessionsSection = () => {
                   )}
 
                   {session.status === 'confirmed' && (
-                    <Button size="sm" className="mt-3">
+                    <Button 
+                      size="sm" 
+                      className="mt-3"
+                      onClick={() => navigate(`/chat/${session.id}`)}
+                    >
                       <MessageSquare className="w-4 h-4 mr-1" />
                       Join Chat
                     </Button>
