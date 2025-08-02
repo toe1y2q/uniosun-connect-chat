@@ -106,11 +106,44 @@ const NotificationSystem = () => {
             let message = '';
             
             if (updatedSession.status === 'confirmed') {
-              message = 'Session confirmed! You can now start chatting.';
+              // Fetch the other participant's name
+              const otherUserId = updatedSession.client_id === user.id 
+                ? updatedSession.student_id 
+                : updatedSession.client_id;
+              
+              const { data: otherUser } = await supabase
+                .from('users')
+                .select('name')
+                .eq('id', otherUserId)
+                .single();
+
+              message = `Session with ${otherUser?.name || 'Unknown'} confirmed! You can now start chatting.`;
             } else if (updatedSession.status === 'cancelled') {
-              message = 'Session has been cancelled.';
+              // Fetch the other participant's name
+              const otherUserId = updatedSession.client_id === user.id 
+                ? updatedSession.student_id 
+                : updatedSession.client_id;
+              
+              const { data: otherUser } = await supabase
+                .from('users')
+                .select('name')
+                .eq('id', otherUserId)
+                .single();
+
+              message = `Session with ${otherUser?.name || 'Unknown'} has been cancelled.`;
             } else if (updatedSession.status === 'completed') {
-              message = 'Session completed.';
+              // Fetch the other participant's name
+              const otherUserId = updatedSession.client_id === user.id 
+                ? updatedSession.student_id 
+                : updatedSession.client_id;
+              
+              const { data: otherUser } = await supabase
+                .from('users')
+                .select('name')
+                .eq('id', otherUserId)
+                .single();
+
+              message = `Session with ${otherUser?.name || 'Unknown'} completed successfully.`;
             }
 
             if (message) {
