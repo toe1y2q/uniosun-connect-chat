@@ -17,6 +17,7 @@ import QuizPage from "@/pages/QuizPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import WithdrawalManagementPage from "@/pages/WithdrawalManagementPage";
 import ChatPage from "@/pages/ChatPage";
+import RatingReviewPage from "@/pages/RatingReviewPage";
 import NotFound from "./pages/NotFound";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useState, useEffect } from "react";
@@ -109,6 +110,15 @@ const AppContent = () => {
         <Route path="/chat/:sessionId" element={
           user ? (
             <ChatPage />
+          ) : (
+            <Navigate to="/auth" replace />
+          )
+        } />
+
+        {/* Review Route */}
+        <Route path="/review/:sessionId" element={
+          user ? (
+            <RatingReviewPage />
           ) : (
             <Navigate to="/auth" replace />
           )
