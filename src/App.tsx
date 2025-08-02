@@ -116,7 +116,7 @@ const AppContent = () => {
         } />
 
         {/* Review Route */}
-        <Route path="/review/:sessionId" element={
+        <Route path="/rating-review/:sessionId" element={
           user ? (
             <RatingReviewPage />
           ) : (
