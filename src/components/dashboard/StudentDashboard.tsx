@@ -169,7 +169,7 @@ const StudentDashboard = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold text-green-600">₦{profile?.wallet_balance || 0}</div>
+                    <div className="text-lg font-bold text-green-600">₦{totalEarnings}</div>
                     <p className="text-xs text-green-600">Wallet Balance</p>
                   </div>
                 </div>
@@ -289,7 +289,7 @@ const StudentDashboard = () => {
                   <Wallet className="h-3 w-3 text-green-600" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-green-600">₦{profile?.wallet_balance || 0}</div>
+                  <div className="text-lg font-bold text-green-600">₦{totalEarnings}</div>
                   <p className="text-xs text-muted-foreground">
                     Available to withdraw
                   </p>
