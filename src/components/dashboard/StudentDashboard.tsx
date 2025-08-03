@@ -169,7 +169,7 @@ const StudentDashboard = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold text-green-600">₦{totalEarnings}</div>
+                    <div className="text-lg font-bold text-green-600">₦{(totalEarnings / 100).toLocaleString()}</div>
                     <p className="text-xs text-green-600">Wallet Balance</p>
                   </div>
                 </div>
@@ -250,7 +250,7 @@ const StudentDashboard = () => {
                   <DollarSign className="h-3 w-3 text-green-600" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-green-600">₦{totalEarnings}</div>
+                  <div className="text-lg font-bold text-green-600">₦{(totalEarnings / 100).toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground">
                     +12% from last month
                   </p>
@@ -289,7 +289,7 @@ const StudentDashboard = () => {
                   <Wallet className="h-3 w-3 text-green-600" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-green-600">₦{totalEarnings}</div>
+                  <div className="text-lg font-bold text-green-600">₦{(totalEarnings / 100).toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground">
                     Available to withdraw
                   </p>
@@ -324,7 +324,7 @@ const StudentDashboard = () => {
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-green-600 text-sm">₦{session.amount}</span>
+                          <span className="font-semibold text-green-600 text-sm">₦{(session.amount / 100).toLocaleString()}</span>
                           <Badge className={`text-xs px-2 py-1 ${
                             session.status === 'completed' ? 'bg-green-100 text-green-800' :
                             session.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
