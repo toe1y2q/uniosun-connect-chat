@@ -18,7 +18,7 @@ const Navigation = () => {
         <div className="flex items-center gap-4 md:gap-6">
           <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <img 
-              src="/lovable-uploads/270d670b-7fe2-42b8-bbd7-b561eb4ec96b.png" 
+              src="/lovable-uploads/f8c01903-66a0-4f99-82df-b1a9d9aeac4b.png" 
               alt="Hireveno Logo" 
               className="h-8 md:h-10 w-auto"
             />

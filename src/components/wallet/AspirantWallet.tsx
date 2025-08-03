@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { 
   Wallet, 
   Plus, 
@@ -66,11 +67,41 @@ const AspirantWallet = () => {
     enabled: !!profile?.id
   });
 
+  // Flutterwave configuration for deposits
+  const config = {
+    public_key: 'FLWPUBK-08518f8d77cbc2a7fbdd880c432bd85f-X',
+    tx_ref: `deposit_${Date.now()}_${profile?.id}`,
+    amount: parseFloat(depositAmount) || 0,
+    currency: 'NGN',
+    payment_options: 'card,mobilemoney,ussd',
+    customer: {
+      email: profile?.email || '',
+      phone_number: '',
+      name: profile?.name || '',
+    },
+    customizations: {
+      title: 'Wallet Deposit',
+      description: `Deposit ₦${depositAmount} to your wallet`,
+      logo: '/lovable-uploads/f8c01903-66a0-4f99-82df-b1a9d9aeac4b.png',
+    },
+  };
+
+  const handleFlutterPayment = useFlutterwave(config);
+
   const handleDeposit = async () => {
     if (!depositAmount || parseFloat(depositAmount) <= 0) {
       toast({
         title: "Invalid Amount",
-        description: "Please enter a valid deposit amount",
+        description: "Please enter a valid deposit amount (minimum ₦100)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (parseFloat(depositAmount) < 100) {
+      toast({
+        title: "Amount Too Small",
+        description: "Minimum deposit amount is ₦100",
         variant: "destructive"
       });
       return;
@@ -78,52 +109,70 @@ const AspirantWallet = () => {
 
     setIsProcessing(true);
     
-    try {
-      // In a real app, this would integrate with Flutterwave
-      // For now, we'll simulate a successful deposit
-      const amount = Math.round(parseFloat(depositAmount) * 100); // Convert to kobo
+    handleFlutterPayment({
+      callback: async (response) => {
+        console.log('Deposit payment response:', response);
+        
+        if (response.status === 'successful') {
+          try {
+            const amount = Math.round(parseFloat(depositAmount) * 100); // Convert to kobo
 
-      const { error } = await supabase
-        .from('transactions')
-        .insert({
-          user_id: profile!.id,
-          type: 'payment',
-          amount: amount,
-          status: 'completed',
-          description: `Wallet deposit of ₦${depositAmount}`,
-          reference: `DEP_${Date.now()}`
-        });
+            // Create transaction record
+            const { error } = await supabase
+              .from('transactions')
+              .insert({
+                user_id: profile!.id,
+                type: 'payment',
+                amount: amount,
+                status: 'completed',
+                description: `Wallet deposit of ₦${depositAmount}`,
+                reference: response.flw_ref
+              });
 
-      if (error) throw error;
+            if (error) throw error;
 
-      // Update wallet balance
-      const { error: walletError } = await supabase
-        .from('users')
-        .update({
-          wallet_balance: (profile?.wallet_balance || 0) + amount
-        })
-        .eq('id', profile!.id);
+            // Update wallet balance
+            const { error: walletError } = await supabase
+              .from('users')
+              .update({
+                wallet_balance: (profile?.wallet_balance || 0) + amount
+              })
+              .eq('id', profile!.id);
 
-      if (walletError) throw walletError;
+            if (walletError) throw walletError;
 
-      toast({
-        title: "Deposit Successful",
-        description: `₦${depositAmount} has been added to your wallet`
-      });
+            toast({
+              title: "Deposit Successful",
+              description: `₦${depositAmount} has been added to your wallet`
+            });
 
-      setDepositAmount('');
-      // Refresh profile data
-      window.location.reload();
-    } catch (error) {
-      console.error('Deposit error:', error);
-      toast({
-        title: "Deposit Failed",
-        description: "There was an error processing your deposit",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+            setDepositAmount('');
+            // Refresh page to update wallet balance
+            window.location.reload();
+          } catch (error) {
+            console.error('Deposit processing error:', error);
+            toast({
+              title: "Deposit Failed",
+              description: "There was an error processing your deposit. Please contact support.",
+              variant: "destructive"
+            });
+          }
+        } else {
+          toast({
+            title: "Payment Failed",
+            description: "Payment failed or was cancelled",
+            variant: "destructive"
+          });
+        }
+        
+        closePaymentModal();
+        setIsProcessing(false);
+      },
+      onClose: () => {
+        console.log('Payment modal closed');
+        setIsProcessing(false);
+      },
+    });
   };
 
   const walletBalance = (profile?.wallet_balance || 0) / 100;
