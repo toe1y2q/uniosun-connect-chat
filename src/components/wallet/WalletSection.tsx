@@ -103,7 +103,12 @@ const WalletSection = () => {
     }
   });
 
-  const balance = profile?.wallet_balance ? profile.wallet_balance / 100 : 0;
+  // Calculate actual available balance from transactions
+  const totalEarnings = transactions?.filter(t => t.type === 'earning').reduce((sum, t) => sum + t.amount, 0) || 0;
+  const totalWithdrawn = withdrawals?.filter(w => w.status !== 'cancelled' && w.status !== 'rejected').reduce((sum, w) => sum + w.amount, 0) || 0;
+  const availableBalance = (totalEarnings - totalWithdrawn) / 100;
+  
+  const profileBalance = profile?.wallet_balance ? profile.wallet_balance / 100 : 0;
   const hasEarnings = transactions?.some(t => t.type === 'earning') || false;
   const hasBankInfo = profile?.account_number && profile?.bank_code && profile?.account_name;
 
@@ -122,12 +127,12 @@ const WalletSection = () => {
       return;
     }
     
-    if (balance < 5) {
+    if (availableBalance < 5) {
       toast.error('Minimum withdrawal amount is ₦500');
       return;
     }
 
-    withdrawMutation.mutate(balance);
+    withdrawMutation.mutate(availableBalance);
   };
 
   if (isLoading) {
@@ -148,7 +153,7 @@ const WalletSection = () => {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₦{balance.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₦{availableBalance.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               Available for withdrawal
             </p>
@@ -174,7 +179,7 @@ const WalletSection = () => {
             <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₦{balance.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₦{(totalEarnings / 100).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               All-time earnings
             </p>
@@ -292,14 +297,14 @@ const WalletSection = () => {
             
             <Button 
               onClick={handleWithdraw}
-              disabled={balance < 5 || !hasBankInfo || withdrawMutation.isPending}
+              disabled={availableBalance < 5 || !hasBankInfo || withdrawMutation.isPending}
               className="w-full bg-green-600 hover:bg-green-700"
             >
               <Download className="w-4 h-4 mr-2" />
               {withdrawMutation.isPending ? 'Processing...' :
-               balance < 5 ? 'Minimum ₦500 required' :
+               availableBalance < 5 ? 'Minimum ₦500 required' :
                !hasBankInfo ? 'Add bank info first' :
-               `Withdraw ₦${balance.toLocaleString()}`}
+               `Withdraw ₦${availableBalance.toLocaleString()}`}
             </Button>
           </div>
         </CardContent>
