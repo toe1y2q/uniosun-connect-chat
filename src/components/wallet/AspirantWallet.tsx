@@ -113,7 +113,12 @@ const AspirantWallet = () => {
       callback: async (response) => {
         console.log('Deposit payment response:', response);
         
-        if (response.status === 'successful') {
+        // Check for successful payment - Flutterwave returns different status formats
+        const isSuccessful = response.status === 'successful' || 
+                           response.status === 'completed' ||
+                           (response as any)?.data?.status === 'successful';
+        
+        if (isSuccessful) {
           try {
             const amount = Math.round(parseFloat(depositAmount) * 100); // Convert to kobo
 
