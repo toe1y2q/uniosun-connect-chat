@@ -125,8 +125,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Fetching profile for user:', userId);
       
       // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000)
       );
       
       const fetchPromise = supabase
@@ -135,7 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', userId)
         .maybeSingle();
 
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
@@ -150,12 +150,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // For admin users who might exist in auth but not in users table
         // Check if this is an admin email and create profile if needed
         const currentUser = await supabase.auth.getUser();
-        const adminEmails = ['tolu8610@gmail.com', 'pithyentertainment@gmail.com'];
+        const adminEmails = ['tolu8610@gmail.com', 'pithyentertainment@gmail.com', 'pithyentertaiment@gmail.com'];
         
         if (currentUser.data.user?.email && adminEmails.includes(currentUser.data.user.email)) {
           console.log('Admin user detected, creating admin profile for:', currentUser.data.user.email);
           await createAdminProfile(userId, currentUser.data.user.email);
         } else {
+          console.log('No profile found and not an admin email, setting profile to null');
           setProfile(null);
         }
       }
