@@ -79,7 +79,27 @@ const StudentDashboard = () => {
     enabled: !!profile?.id
   });
 
+  // Fetch withdrawals data
+  const { data: withdrawals } = useQuery({
+    queryKey: ['student-withdrawals', profile?.id],
+    queryFn: async () => {
+      if (!profile?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('withdrawals')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!profile?.id
+  });
+
   const totalEarnings = earnings?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
+  const totalWithdrawals = withdrawals?.reduce((sum, withdrawal) => sum + withdrawal.amount, 0) || 0;
+  const availableBalance = totalEarnings - totalWithdrawals;
   const completedSessions = sessions?.filter(s => s.status === 'completed').length || 0;
   const upcomingSessions = sessions?.filter(s => s.status === 'confirmed').length || 0;
 
@@ -169,7 +189,7 @@ const StudentDashboard = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold text-green-600">₦{(totalEarnings / 100).toLocaleString()}</div>
+                    <div className="text-lg font-bold text-green-600">₦{(availableBalance / 100).toLocaleString()}</div>
                     <p className="text-xs text-green-600">Wallet Balance</p>
                   </div>
                 </div>
@@ -289,7 +309,7 @@ const StudentDashboard = () => {
                   <Wallet className="h-3 w-3 text-green-600" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-green-600">₦{(totalEarnings / 100).toLocaleString()}</div>
+                  <div className="text-lg font-bold text-green-600">₦{(availableBalance / 100).toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground">
                     Available to withdraw
                   </p>
