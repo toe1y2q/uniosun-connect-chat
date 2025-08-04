@@ -37,7 +37,7 @@ const NotificationBell = () => {
             notifications.push({
               id: `session-${session.id}`,
               type: 'session',
-              message: `Session with ${session.student?.name} is confirmed for ${new Date(session.scheduled_at).toLocaleDateString()}`,
+              message: `Session with ${session.student?.name || 'Student'} is confirmed for ${new Date(session.scheduled_at).toLocaleDateString()}`,
               time: session.created_at,
               icon: Calendar,
               unread: true,
@@ -47,7 +47,7 @@ const NotificationBell = () => {
             notifications.push({
               id: `review-needed-${session.id}`,
               type: 'review',
-              message: `Please rate your session with ${session.student?.name}`,
+              message: `Please rate your session with ${session.student?.name || 'Student'}`,
               time: session.updated_at || session.created_at,
               icon: Star,
               unread: true,
@@ -96,7 +96,7 @@ const NotificationBell = () => {
             notifications.push({
               id: `session-booked-${session.id}`,
               type: 'session',
-              message: `New session booked by ${session.client?.name} for ${new Date(session.scheduled_at).toLocaleDateString()}`,
+              message: `New session booked by ${session.client?.name || 'Aspirant'} for ${new Date(session.scheduled_at).toLocaleDateString()}`,
               time: session.created_at,
               icon: BookOpen,
               unread: true,
@@ -106,7 +106,7 @@ const NotificationBell = () => {
             notifications.push({
               id: `session-completed-${session.id}`,
               type: 'session',
-              message: `Session with ${session.client?.name} completed successfully`,
+              message: `Session with ${session.client?.name || 'Aspirant'} completed successfully`,
               time: session.updated_at || session.created_at,
               icon: Calendar,
               unread: true,
@@ -152,7 +152,7 @@ const NotificationBell = () => {
           notifications.push({
             id: `review-received-${review.id}`,
             type: 'review',
-            message: `You received a ${review.rating}-star review from ${review.sessions.client?.name}`,
+            message: `You received a ${review.rating}-star review from ${review.sessions.client?.name || 'Aspirant'}`,
             time: review.created_at,
             icon: Star,
             unread: true
