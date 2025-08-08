@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthContext';
@@ -26,6 +27,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
   onCancel
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Calculate amount based on duration
   const getAmount = (duration: number) => {
@@ -68,7 +70,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
       callback: async (response) => {
         console.log('Payment response:', response);
         
-        if (response.status === 'successful') {
+        if (['successful', 'success', 'completed'].includes(String(response.status).toLowerCase())) {
           try {
             // Create session record
             const { data: session, error: sessionError } = await supabase
@@ -81,7 +83,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
                 scheduled_at: sessionData.scheduledAt,
                 status: 'confirmed',
                 payment_status: 'completed',
-                flutterwave_reference: response.flw_ref,
+                flutterwave_reference: response.tx_ref || response.flw_ref || String(response.transaction_id || ''),
                 description: sessionData.description || `${sessionData.duration} minute tutoring session`
               })
               .select()
@@ -101,7 +103,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
                 amount: amount * 100, // Store in kobo
                 type: 'payment',
                 status: 'completed',
-                reference: response.flw_ref,
+                reference: response.tx_ref || response.flw_ref || String(response.transaction_id || ''),
                 description: `Payment for ${sessionData.duration} minute tutoring session`
               });
 
@@ -111,6 +113,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
             }
 
             toast.success('Payment successful! Session booked.');
+            navigate(`/payment/success/${session.id}`);
             onSuccess(session.id);
           } catch (error) {
             console.error('Payment processing error:', error);

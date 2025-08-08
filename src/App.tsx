@@ -18,6 +18,8 @@ import UserManagementPage from "@/pages/UserManagementPage";
 import WithdrawalManagementPage from "@/pages/WithdrawalManagementPage";
 import ChatPage from "@/pages/ChatPage";
 import RatingReviewPage from "@/pages/RatingReviewPage";
+import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
+import WithdrawalsPage from "@/pages/WithdrawalsPage";
 import NotFound from "./pages/NotFound";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useState, useEffect } from "react";
@@ -174,6 +176,12 @@ const AppContent = () => {
           )
         } />
         
+        <Route path="/payment/success/:sessionId" element={
+          user ? (<PaymentSuccessPage />) : (<Navigate to="/auth" replace />)
+        } />
+        <Route path="/withdrawals" element={
+          user ? (<WithdrawalsPage />) : (<Navigate to="/auth" replace />)
+        } />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
