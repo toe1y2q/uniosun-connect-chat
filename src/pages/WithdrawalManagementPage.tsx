@@ -19,7 +19,7 @@ const WithdrawalManagementPage = () => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'requested' | 'processing' | 'completed' | 'failed'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'requested' | 'processing' | 'paid' | 'failed'>('all');
 
   // Fetch all withdrawals (admin only)
   const { data: withdrawals, isLoading } = useQuery({
@@ -96,8 +96,8 @@ const WithdrawalManagementPage = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
+       case 'paid':
+         return 'bg-green-100 text-green-800';
       case 'processing':
         return 'bg-blue-100 text-blue-800';
       case 'failed':
@@ -109,8 +109,8 @@ const WithdrawalManagementPage = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4" />;
+       case 'paid':
+         return <CheckCircle className="w-4 h-4" />;
       case 'processing':
         return <Clock className="w-4 h-4" />;
       case 'failed':
@@ -135,7 +135,7 @@ const WithdrawalManagementPage = () => {
   }
 
   const totalAmount = withdrawals?.reduce((sum, w) => sum + (w.amount || 0), 0) || 0;
-  const completedAmount = withdrawals?.filter(w => w.status === 'completed').reduce((sum, w) => sum + (w.amount || 0), 0) || 0;
+  const completedAmount = withdrawals?.filter(w => w.status === 'paid').reduce((sum, w) => sum + (w.amount || 0), 0) || 0;
   const pendingAmount = withdrawals?.filter(w => w.status === 'requested').reduce((sum, w) => sum + (w.amount || 0), 0) || 0;
 
   return (
@@ -179,7 +179,7 @@ const WithdrawalManagementPage = () => {
               <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-600">Completed</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-600">Paid</p>
                     <p className="text-lg sm:text-2xl font-bold text-green-600">₦{(completedAmount / 100).toLocaleString()}</p>
                   </div>
                   <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-400" />
@@ -222,7 +222,7 @@ const WithdrawalManagementPage = () => {
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="requested">Requested</SelectItem>
                     <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>
                   </SelectContent>
                 </Select>
@@ -317,7 +317,7 @@ const WithdrawalManagementPage = () => {
                             <>
                               <Button
                                 size="sm"
-                                onClick={() => handleStatusUpdate(withdrawal.id, 'completed')}
+                                onClick={() => handleStatusUpdate(withdrawal.id, 'paid')}
                                 className="bg-green-600 hover:bg-green-700 text-xs"
                               >
                                 Complete
@@ -343,7 +343,7 @@ const WithdrawalManagementPage = () => {
                             <SelectContent>
                               <SelectItem value="requested">Requested</SelectItem>
                               <SelectItem value="processing">Processing</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="paid">Paid</SelectItem>
                               <SelectItem value="failed">Failed</SelectItem>
                             </SelectContent>
                           </Select>
