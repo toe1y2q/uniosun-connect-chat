@@ -23,23 +23,29 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch verified students with their department info
+  // Fetch verified students via safe public view + map department names client-side
   const { data: talents, isLoading } = useQuery({
     queryKey: ['talents'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select(`
-          *,
-          departments!users_department_id_fkey (name)
-        `)
-        .eq('role', 'student')
-        .eq('is_verified', true)
-        .eq('badge', true)
-        .order('quiz_score', { ascending: false });
-      
-      if (error) throw error;
-      return data;
+      const [studentsRes, departmentsRes] = await Promise.all([
+        supabase
+          .from('verified_students_public')
+          .select('*')
+          .order('quiz_score', { ascending: false }),
+        supabase
+          .from('departments')
+          .select('id, name')
+      ]);
+
+      if (studentsRes.error) throw studentsRes.error;
+      if (departmentsRes.error) throw departmentsRes.error;
+
+      const deptMap = new Map((departmentsRes.data || []).map((d: any) => [d.id, d.name]));
+
+      return (studentsRes.data || []).map((s: any) => ({
+        ...s,
+        departments: { name: deptMap.get(s.department_id) || 'General Studies' },
+      }));
     }
   });
 

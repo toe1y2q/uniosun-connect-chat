@@ -56,6 +56,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "appeals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       chat_messages: {
@@ -108,6 +115,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
             referencedColumns: ["id"]
           },
           {
@@ -239,6 +253,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "quiz_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reports: {
@@ -272,6 +293,13 @@ export type Database = {
             columns: ["flagged_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_flagged_by_fkey"
+            columns: ["flagged_by"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
             referencedColumns: ["id"]
           },
           {
@@ -338,6 +366,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reviews_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -401,10 +436,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sessions_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
             referencedColumns: ["id"]
           },
         ]
@@ -456,6 +505,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
             referencedColumns: ["id"]
           },
         ]
@@ -567,6 +623,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "verified_students_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       withdrawals: {
@@ -614,11 +677,55 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "withdrawals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      verified_students_public: {
+        Row: {
+          badge: boolean | null
+          department_id: string | null
+          id: string | null
+          is_verified: boolean | null
+          name: string | null
+          profile_image: string | null
+          quiz_score: number | null
+        }
+        Insert: {
+          badge?: boolean | null
+          department_id?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          name?: string | null
+          profile_image?: string | null
+          quiz_score?: number | null
+        }
+        Update: {
+          badge?: boolean | null
+          department_id?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          name?: string | null
+          profile_image?: string | null
+          quiz_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_current_user_role: {

@@ -19,24 +19,29 @@ const StudentDetailPage = () => {
   const { user, profile } = useAuth();
   const [showBookingModal, setShowBookingModal] = useState(false);
 
-  // Fetch student details
+  // Fetch student details (safe public view) + department name
   const { data: student, isLoading } = useQuery({
     queryKey: ['student-detail', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select(`
-          *,
-          departments!users_department_id_fkey (name)
-        `)
+      const { data: s, error: sErr } = await supabase
+        .from('verified_students_public')
+        .select('*')
         .eq('id', id)
-        .eq('role', 'student')
-        .eq('is_verified', true)
-        .eq('badge', true)
         .single();
-      
-      if (error) throw error;
-      return data;
+      if (sErr) throw sErr;
+      if (!s) return null;
+
+      const { data: dept, error: dErr } = await supabase
+        .from('departments')
+        .select('id, name')
+        .eq('id', s.department_id)
+        .maybeSingle();
+      if (dErr) throw dErr;
+
+      return {
+        ...s,
+        departments: { name: dept?.name || 'General Studies' },
+      } as any;
     },
     enabled: !!id
   });
