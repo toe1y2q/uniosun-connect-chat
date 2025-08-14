@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -54,6 +54,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appeals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public_min"
             referencedColumns: ["id"]
           },
           {
@@ -115,6 +122,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users_public_min"
             referencedColumns: ["id"]
           },
           {
@@ -257,6 +271,13 @@ export type Database = {
             foreignKeyName: "quiz_attempts_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "users_public_min"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "verified_students_public"
             referencedColumns: ["id"]
           },
@@ -293,6 +314,13 @@ export type Database = {
             columns: ["flagged_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_flagged_by_fkey"
+            columns: ["flagged_by"]
+            isOneToOne: false
+            referencedRelation: "users_public_min"
             referencedColumns: ["id"]
           },
           {
@@ -369,6 +397,13 @@ export type Database = {
             foreignKeyName: "reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
+            referencedRelation: "users_public_min"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
             referencedRelation: "verified_students_public"
             referencedColumns: ["id"]
           },
@@ -439,6 +474,13 @@ export type Database = {
             foreignKeyName: "sessions_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "users_public_min"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "verified_students_public"
             referencedColumns: ["id"]
           },
@@ -447,6 +489,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "users_public_min"
             referencedColumns: ["id"]
           },
           {
@@ -505,6 +554,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public_min"
             referencedColumns: ["id"]
           },
           {
@@ -627,6 +683,13 @@ export type Database = {
             foreignKeyName: "wallets_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "users_public_min"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "verified_students_public"
             referencedColumns: ["id"]
           },
@@ -681,6 +744,13 @@ export type Database = {
             foreignKeyName: "withdrawals_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "users_public_min"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "verified_students_public"
             referencedColumns: ["id"]
           },
@@ -688,6 +758,24 @@ export type Database = {
       }
     }
     Views: {
+      users_public_min: {
+        Row: {
+          id: string | null
+          name: string | null
+          profile_image: string | null
+        }
+        Insert: {
+          id?: string | null
+          name?: string | null
+          profile_image?: string | null
+        }
+        Update: {
+          id?: string | null
+          name?: string | null
+          profile_image?: string | null
+        }
+        Relationships: []
+      }
       verified_students_public: {
         Row: {
           badge: boolean | null
