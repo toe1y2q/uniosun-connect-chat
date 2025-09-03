@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAutoScrollTabs } from '@/hooks/use-auto-scroll-tabs';
+import DashboardErrorBoundary from './DashboardErrorBoundary';
 import { 
   GraduationCap, 
   BookOpen, 
@@ -39,62 +40,89 @@ const StudentDashboard = () => {
   const [activeTab, setActiveTab] = React.useState('overview');
   const { tabsRef, registerTab } = useAutoScrollTabs(activeTab);
 
-  // Fetch student's sessions
-  const { data: sessions } = useQuery({
+  // Fetch student's sessions with timeout and error handling
+  const { data: sessions, isLoading: sessionsLoading, error: sessionsError, refetch: refetchSessions } = useQuery({
     queryKey: ['student-sessions', profile?.id],
     queryFn: async () => {
       if (!profile?.id) return [];
       
-      const { data, error } = await supabase
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Sessions fetch timeout')), 15000)
+      );
+      
+      const fetchPromise = supabase
         .from('sessions')
         .select(`
           *,
-          client:users!sessions_client_id_fkey (name)
+          users!sessions_client_id_fkey (
+            id,
+            name,
+            email
+          )
         `)
         .eq('student_id', profile.id)
-        .order('created_at', { ascending: false });
+        .order('scheduled_at', { ascending: false });
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
       
       if (error) throw error;
       return data;
     },
-    enabled: !!profile?.id
+    enabled: !!profile?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2
   });
 
-  // Fetch earnings data
-  const { data: earnings } = useQuery({
+  // Fetch student's earnings from transactions with timeout
+  const { data: earnings, isLoading: earningsLoading, error: earningsError } = useQuery({
     queryKey: ['student-earnings', profile?.id],
     queryFn: async () => {
       if (!profile?.id) return [];
       
-      const { data, error } = await supabase
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Earnings fetch timeout')), 10000)
+      );
+      
+      const fetchPromise = supabase
         .from('transactions')
         .select('*')
         .eq('user_id', profile.id)
         .eq('type', 'earning')
         .order('created_at', { ascending: false });
-      
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
       if (error) throw error;
       return data;
     },
-    enabled: !!profile?.id
+    enabled: !!profile?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2
   });
 
-  // Fetch withdrawals data
-  const { data: withdrawals } = useQuery({
+  // Fetch student's withdrawals with timeout
+  const { data: withdrawals, isLoading: withdrawalsLoading, error: withdrawalsError } = useQuery({
     queryKey: ['student-withdrawals', profile?.id],
     queryFn: async () => {
       if (!profile?.id) return [];
       
-      const { data, error } = await supabase
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Withdrawals fetch timeout')), 10000)
+      );
+      
+      const fetchPromise = supabase
         .from('withdrawals')
         .select('*')
         .eq('user_id', profile.id)
         .order('created_at', { ascending: false });
-      
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
       if (error) throw error;
       return data;
     },
-    enabled: !!profile?.id
+    enabled: !!profile?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2
   });
 
   const totalEarnings = earnings?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
@@ -103,7 +131,23 @@ const StudentDashboard = () => {
   const completedSessions = sessions?.filter(s => s.status === 'completed').length || 0;
   const upcomingSessions = sessions?.filter(s => s.status === 'confirmed').length || 0;
 
+  // Combined loading and error states
+  const isLoading = sessionsLoading || earningsLoading || withdrawalsLoading;
+  const hasError = sessionsError || earningsError || withdrawalsError;
+  const firstError = sessionsError || earningsError || withdrawalsError;
+
+  const handleRetry = () => {
+    refetchSessions();
+  };
+
+  if (!profile) return null;
+
   return (
+    <DashboardErrorBoundary 
+      loading={isLoading} 
+      error={firstError} 
+      onRetry={handleRetry}
+    >
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
         <motion.div 
@@ -337,7 +381,7 @@ const StudentDashboard = () => {
                             <Users className="w-4 h-4 text-green-600" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-sm truncate">{session.client?.name}</h4>
+                            <h4 className="font-semibold text-sm truncate">{session.users?.name}</h4>
                             <p className="text-xs text-gray-600 truncate">
                               {new Date(session.scheduled_at).toLocaleDateString()} • {session.duration} minutes
                             </p>
@@ -417,6 +461,7 @@ const StudentDashboard = () => {
         </Tabs>
       </div>
     </div>
+    </DashboardErrorBoundary>
   );
 };
 

@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import SettlementManager from '@/components/payment/SettlementManager';
 import { Users, GraduationCap, CheckCircle, XCircle, Eye, Shield, BarChart3, Clock, Flag, Wallet, Settings } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
@@ -242,6 +243,9 @@ const AdminDashboard = () => {
               <TabsTrigger value="analytics" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-xs px-2 py-2 whitespace-nowrap">
                 Analytics
               </TabsTrigger>
+              <TabsTrigger value="settlements" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-xs px-2 py-2 whitespace-nowrap">
+                Settlements
+              </TabsTrigger>
             </TabsList>
           </ScrollArea>
 
@@ -390,6 +394,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="analytics" className="space-y-4">
             <PlatformAnalytics />
+          </TabsContent>
+
+          <TabsContent value="settlements" className="space-y-4">
+            <SettlementManager />
           </TabsContent>
         </Tabs>
       </div>

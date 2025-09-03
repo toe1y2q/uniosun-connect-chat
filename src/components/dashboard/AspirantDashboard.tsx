@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAutoScrollTabs } from '@/hooks/use-auto-scroll-tabs';
+import DashboardErrorBoundary from './DashboardErrorBoundary';
 import { 
   BookOpen, 
   MessageSquare, 
@@ -34,11 +35,15 @@ const AspirantDashboard = () => {
   const [activeTab, setActiveTab] = React.useState('overview');
   const { tabsRef, registerTab } = useAutoScrollTabs(activeTab);
 
-  // Fetch available talents for quick access
-  const { data: talents } = useQuery({
+  // Fetch available talents for quick access with timeout
+  const { data: talents, isLoading: talentsLoading, error: talentsError, refetch: refetchTalents } = useQuery({
     queryKey: ['featured-talents'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Talents fetch timeout')), 15000)
+      );
+      
+      const fetchPromise = supabase
         .from('users')
         .select(`
           *,
@@ -48,76 +53,114 @@ const AspirantDashboard = () => {
         .eq('is_verified', true)
         .eq('badge', true)
         .limit(8);
-      
-      if (error) throw error;
-      return data;
-    }
-  });
 
-  // Fetch user's sessions
-  const { data: sessions } = useQuery({
-    queryKey: ['aspirant-sessions', profile?.id],
-    queryFn: async () => {
-      if (!profile?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('sessions')
-        .select(`
-          *,
-          student:users!sessions_student_id_fkey (name, profile_image)
-        `)
-        .eq('client_id', profile.id)
-        .order('created_at', { ascending: false });
-      
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
       if (error) throw error;
       return data;
     },
-    enabled: !!profile?.id
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2
   });
 
-  // Fetch user's transactions
-  const { data: transactions } = useQuery({
-    queryKey: ['aspirant-transactions', profile?.id],
+  // Fetch user's sessions with timeout
+  const { data: userSessions, isLoading: sessionsLoading, error: sessionsError } = useQuery({
+    queryKey: ['user-sessions', profile?.id],
     queryFn: async () => {
       if (!profile?.id) return [];
       
-      const { data, error } = await supabase
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Sessions fetch timeout')), 15000)
+      );
+      
+      const fetchPromise = supabase
+        .from('sessions')
+        .select(`
+          *,
+          users!sessions_student_id_fkey (
+            id,
+            name,
+            email
+          )
+        `)
+        .eq('client_id', profile.id)
+        .order('scheduled_at', { ascending: false });
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!profile?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2
+  });
+
+  // Fetch user's transactions with timeout
+  const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery({
+    queryKey: ['user-transactions', profile?.id],
+    queryFn: async () => {
+      if (!profile?.id) return [];
+      
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Transactions fetch timeout')), 10000)
+      );
+      
+      const fetchPromise = supabase
         .from('transactions')
         .select('*')
         .eq('user_id', profile.id)
         .order('created_at', { ascending: false });
-      
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
       if (error) throw error;
       return data;
     },
-    enabled: !!profile?.id
+    enabled: !!profile?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2
   });
 
-  // Fetch popular departments
-  const { data: departments } = useQuery({
+  // Fetch popular departments with timeout
+  const { data: departments, isLoading: departmentsLoading, error: departmentsError } = useQuery({
     queryKey: ['popular-departments'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('departments')
-        .select(`
-          *,
-          users!users_department_id_fkey(id)
-        `)
-        .limit(6);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Departments fetch timeout')), 10000)
+      );
       
+      const fetchPromise = supabase
+        .from('departments')
+        .select('*')
+        .limit(10);
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
       if (error) throw error;
-      return data?.map(dept => ({
-        ...dept,
-        studentCount: dept.users?.length || 0
-      }));
-    }
+      return data;
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    retry: 1
   });
 
   const totalSpent = transactions?.filter(t => t.type === 'payment').reduce((sum, t) => sum + t.amount, 0) || 0;
-  const completedSessions = sessions?.filter(s => s.status === 'completed').length || 0;
-  const upcomingSessions = sessions?.filter(s => s.status === 'confirmed').length || 0;
+  const completedSessions = userSessions?.filter(s => s.status === 'completed').length || 0;
+  const upcomingSessions = userSessions?.filter(s => s.status === 'confirmed').length || 0;
+
+  // Combined loading and error states
+  const isLoading = talentsLoading || sessionsLoading || transactionsLoading || departmentsLoading;
+  const hasError = talentsError || sessionsError || transactionsError || departmentsError;
+  const firstError = talentsError || sessionsError || transactionsError || departmentsError;
+
+  const handleRetry = () => {
+    refetchTalents();
+  };
+
+  if (!profile) return null;
 
   return (
+    <DashboardErrorBoundary 
+      loading={isLoading} 
+      error={firstError} 
+      onRetry={handleRetry}
+    >
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
         <motion.div 
@@ -339,16 +382,16 @@ const AspirantDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {sessions && sessions.length > 0 ? (
+                {userSessions && userSessions.length > 0 ? (
                   <div className="space-y-3">
-                    {sessions.slice(0, 5).map((session) => (
+                    {userSessions.slice(0, 5).map((session) => (
                       <div key={session.id} className="flex flex-col gap-2 p-3 border border-green-200 rounded-lg">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                             <Users className="w-4 h-4 text-green-600" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-sm truncate">{session.student?.name}</h4>
+                            <h4 className="font-semibold text-sm truncate">{session.users?.name}</h4>
                             <p className="text-xs text-gray-600 truncate">
                               {new Date(session.scheduled_at).toLocaleDateString()} • {session.duration} minutes
                             </p>
@@ -416,6 +459,7 @@ const AspirantDashboard = () => {
         </Tabs>
       </div>
     </div>
+    </DashboardErrorBoundary>
   );
 };
 
