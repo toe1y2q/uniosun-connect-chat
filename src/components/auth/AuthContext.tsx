@@ -124,22 +124,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('Fetching profile for user:', userId);
       
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000)
-      );
+      // Use AbortController for proper timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.warn('Profile fetch aborted due to timeout');
+      }, 10000); // Reduced to 10 seconds
       
-      const fetchPromise = supabase
+      const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
+        .abortSignal(controller.signal)
         .maybeSingle();
 
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+      clearTimeout(timeoutId);
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
-        return;
+        // Don't return here, let it fall through to handle potential admin case
+        if (error.name === 'AbortError') {
+          console.error('Profile fetch timeout - forcing signout');
+          await signOut();
+          return;
+        }
       }
 
       if (data) {
@@ -148,20 +156,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         console.log('No profile found for user, checking if admin user exists in auth');
         // For admin users who might exist in auth but not in users table
-        // Check if this is an admin email and create profile if needed
-        const currentUser = await supabase.auth.getUser();
-        const adminEmails = ['tolu8610@gmail.com', 'pithyentertainment@gmail.com', 'pithyentertaiment@gmail.com'];
-        
-        if (currentUser.data.user?.email && adminEmails.includes(currentUser.data.user.email)) {
-          console.log('Admin user detected, creating admin profile for:', currentUser.data.user.email);
-          await createAdminProfile(userId, currentUser.data.user.email);
-        } else {
-          console.log('No profile found and not an admin email, setting profile to null');
+        try {
+          const currentUser = await supabase.auth.getUser();
+          const adminEmails = ['tolu8610@gmail.com', 'pithyentertainment@gmail.com', 'pithyentertaiment@gmail.com'];
+          
+          if (currentUser.data.user?.email && adminEmails.includes(currentUser.data.user.email)) {
+            console.log('Admin user detected, creating admin profile for:', currentUser.data.user.email);
+            await createAdminProfile(userId, currentUser.data.user.email);
+          } else {
+            console.log('No profile found and not an admin email, setting profile to null');
+            setProfile(null);
+          }
+        } catch (adminCheckError) {
+          console.error('Error checking admin user:', adminCheckError);
           setProfile(null);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in fetchProfile:', error);
+      
+      // If it's a timeout/abort error, force signout to clear stuck state
+      if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+        console.error('Critical profile fetch error - forcing signout to recover');
+        await signOut();
+        return;
+      }
+      
       setProfile(null);
     }
   };
