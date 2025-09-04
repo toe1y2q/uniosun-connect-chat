@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const timeoutId = setTimeout(() => {
         controller.abort();
         console.warn('Profile fetch aborted due to timeout');
-      }, 10000); // Reduced to 10 seconds
+      }, 8000); // Reduced to 8 seconds
       
       const { data, error } = await supabase
         .from('users')
@@ -140,12 +140,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       clearTimeout(timeoutId);
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        // Don't return here, let it fall through to handle potential admin case
+      if (error) {
         if (error.name === 'AbortError') {
-          console.error('Profile fetch timeout - forcing signout');
-          await signOut();
+          console.error('Profile fetch timeout - clearing state and forcing signout');
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          await supabase.auth.signOut();
+          return;
+        }
+        
+        if (error.code !== 'PGRST116') {
+          console.error('Error fetching profile:', error);
+          setProfile(null);
           return;
         }
       }
@@ -175,10 +182,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error: any) {
       console.error('Error in fetchProfile:', error);
       
-      // If it's a timeout/abort error, force signout to clear stuck state
+      // If it's a timeout/abort error, clear state immediately and force signout
       if (error.name === 'AbortError' || error.message?.includes('timeout')) {
-        console.error('Critical profile fetch error - forcing signout to recover');
-        await signOut();
+        console.error('Critical profile fetch error - clearing state and forcing signout to recover');
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        await supabase.auth.signOut();
         return;
       }
       
@@ -268,11 +278,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
+      console.log('Signing out user...');
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
+      setLoading(false);
+      console.log('Sign out completed');
     } catch (error) {
       console.error('SignOut error:', error);
+      // Even if signout fails, clear local state
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
     }
   };
 
