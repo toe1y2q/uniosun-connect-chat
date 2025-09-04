@@ -37,13 +37,16 @@ serve(async (req) => {
       throw new Error('No Flutterwave reference found')
     }
 
-    // Settle escrow with Flutterwave
-    const settleResponse = await fetch(`https://api.flutterwave.com/v3/transactions/${session.flutterwave_reference}/escrow/settle`, {
+    // Settle escrow with Ravepay
+    const settleResponse = await fetch('https://api.ravepay.co/v2/gpx/transactions/escrow/settle', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer FLWSECK-434b96a89fc920868e3cc03604d8fb11-1973af2c9bcvt-X`,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify({
+        id: session.flutterwave_reference,
+        secret_key: Deno.env.get('FLUTTERWAVE_SECRET_KEY') || 'FLWSECK-434b96a89fc920868e3cc03604d8fb11-1973af2c9bcvt-X'
+      })
     })
 
     const settleResult = await settleResponse.json()
