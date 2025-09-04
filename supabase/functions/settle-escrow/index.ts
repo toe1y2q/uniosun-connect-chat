@@ -49,7 +49,18 @@ serve(async (req) => {
       })
     })
 
-    const settleResult = await settleResponse.json()
+    let settleResult;
+    const responseText = await settleResponse.text()
+    console.log('Raw settlement response:', responseText)
+    console.log('Settlement response status:', settleResponse.status)
+    
+    try {
+      settleResult = JSON.parse(responseText)
+    } catch (e) {
+      console.error('Failed to parse settlement response as JSON:', e)
+      throw new Error(`Settlement API error: ${responseText}`)
+    }
+    
     console.log('Escrow settlement result:', settleResult)
 
     if (settleResult.status === 'success') {
