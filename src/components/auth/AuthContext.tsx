@@ -32,15 +32,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    let initializationComplete = false;
 
     const initializeAuth = async () => {
       try {
         console.log('Initializing auth...');
         
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Add timeout to prevent hanging on session fetch
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Session fetch timeout')), 10000)
+        );
+        
+        const sessionPromise = supabase.auth.getSession();
+        const result = await Promise.race([sessionPromise, timeoutPromise]);
+        const { data: { session }, error } = result;
         
         if (error) {
           console.error('Error getting session:', error);
+          // Clear any existing auth state on error
+          if (mounted) {
+            setUser(null);
+            setProfile(null);
+          }
+          return;
         }
 
         if (mounted) {
@@ -48,41 +62,72 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(currentUser);
           
           if (currentUser) {
-            await fetchProfile(currentUser.id);
+            try {
+              await fetchProfile(currentUser.id);
+            } catch (profileError) {
+              console.error('Profile fetch failed during init:', profileError);
+              setProfile(null);
+            }
           } else {
             setProfile(null);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error in initializeAuth:', error);
         if (mounted) {
+          // Clear all auth state on any error
           setUser(null);
           setProfile(null);
+          
+          // If it's a refresh token error, clear the session
+          if (error.message?.includes('refresh') || error.message?.includes('token')) {
+            console.log('Clearing invalid session due to token error');
+            supabase.auth.signOut();
+          }
         }
       } finally {
         if (mounted) {
+          initializationComplete = true;
           setLoading(false);
+          console.log('Auth initialization complete');
         }
       }
     };
 
-    initializeAuth();
-
-    // Listen for auth changes
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
       
-      if (mounted) {
+      if (!mounted) return;
+      
+      try {
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         
+        // Only fetch profile if we have a user and it's not a sign out event
         if (currentUser && event !== 'SIGNED_OUT') {
           await fetchProfile(currentUser.id);
         } else {
           setProfile(null);
         }
+        
+        // Ensure loading is false after auth state changes (but only after initial setup)
+        if (initializationComplete) {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error in auth state change handler:', error);
+        if (mounted) {
+          setProfile(null);
+          if (initializationComplete) {
+            setLoading(false);
+          }
+        }
       }
     });
+
+    // Initialize auth
+    initializeAuth();
 
     return () => {
       mounted = false;

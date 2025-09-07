@@ -32,27 +32,41 @@ const AppContent = () => {
   const { user, profile, loading } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(true);
+  const [forceShowApp, setForceShowApp] = useState(false);
 
-  console.log('App state:', { user: !!user, profile, loading });
+  console.log('App state:', { user: !!user, profile, loading, forceShowApp });
 
-  // Add timeout fallback for loading state
+  // Add timeout fallback for loading state to prevent permanent stuck state
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn('Loading timeout reached, app may be stuck');
+      if (loading && !forceShowApp) {
+        console.warn('Loading timeout reached - forcing app to show to prevent permanent loading');
+        setForceShowApp(true);
       }
-    }, 15000); // 15 second timeout
+    }, 12000); // 12 second timeout
 
     return () => clearTimeout(timeout);
+  }, [loading, forceShowApp]);
+
+  // Reset forceShowApp when loading changes
+  useEffect(() => {
+    if (!loading) {
+      setForceShowApp(false);
+    }
   }, [loading]);
 
-  if (loading) {
+  if (loading && !forceShowApp) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
-        <LoadingSpinner 
-          message="Connecting to Hireveno..." 
-          size="lg"
-        />
+        <div className="text-center">
+          <LoadingSpinner 
+            message="Connecting to Hireveno..." 
+            size="lg"
+          />
+          <p className="mt-4 text-sm text-gray-500">
+            If this takes too long, try refreshing the page
+          </p>
+        </div>
       </div>
     );
   }
