@@ -175,7 +175,7 @@ const AspirantDashboard = () => {
                 <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
                   Welcome back, {profile?.name}!
                 </h1>
-                <p className="text-xs sm:text-base text-gray-600 truncate">UNIOSUN Aspirant Dashboard</p>
+                <p className="text-xs sm:text-base text-gray-600 truncate">University Aspirant Dashboard</p>
               </div>
             </div>
             <div className="flex items-center gap-1 flex-wrap">
@@ -328,7 +328,7 @@ const AspirantDashboard = () => {
                   Featured Talents
                 </CardTitle>
                 <CardDescription>
-                  Top-rated verified UNIOSUN students ready to help you
+                  Top-rated verified university students ready to help you
                 </CardDescription>
               </CardHeader>
               <CardContent>

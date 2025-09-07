@@ -162,7 +162,7 @@ const StudentDashboard = () => {
                 <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
                   Welcome back, {profile?.name}!
                 </h1>
-                <p className="text-xs sm:text-base text-gray-600 truncate">UNIOSUN Student Dashboard</p>
+                <p className="text-xs sm:text-base text-gray-600 truncate">University Student Dashboard</p>
               </div>
             </div>
             <div className="flex items-center gap-1 flex-wrap">

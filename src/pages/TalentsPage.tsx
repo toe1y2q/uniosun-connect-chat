@@ -104,7 +104,7 @@ const TalentsPage: React.FC<TalentsPageProps> = ({ onAuthRequired }) => {
               Meet Our <span className="text-green-600">Talented Students</span>
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Connect with verified UNIOSUN students who have proven their expertise. 
+              Connect with verified university students who have proven their expertise. 
               Book personalized sessions to get help with your academic journey.
             </p>
           </div>

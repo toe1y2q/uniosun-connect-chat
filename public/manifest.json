@@ -1,7 +1,7 @@
 {
-  "name": "Hireveno - UNIOSUN Connect",
+  "name": "Hireveno - University Connect",
   "short_name": "Hireveno",
-  "description": "Connect with UNIOSUN students and aspirants for personalized tutoring sessions",
+  "description": "Connect with university students and aspirants for personalized tutoring sessions",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

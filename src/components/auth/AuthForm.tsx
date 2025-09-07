@@ -177,7 +177,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                         <SelectItem value="student">
                           <div className="flex items-center gap-2">
                             <GraduationCap className="w-4 h-4" />
-                            UNIOSUN Student
+                            University Student
                           </div>
                         </SelectItem>
                         <SelectItem value="aspirant">

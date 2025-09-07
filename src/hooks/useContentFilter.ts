@@ -42,7 +42,7 @@ export const useContentFilter = () => {
     if (!hasAcademicContent) {
       return {
         allowed: false,
-        reason: 'Messages must be related to academics, admission, departments, UNIOSUN, or other universities.'
+        reason: 'Messages must be related to academics, admission, departments, university, or other universities.'
       };
     }
 

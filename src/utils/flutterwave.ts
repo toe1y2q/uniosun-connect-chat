@@ -49,7 +49,7 @@ export const initializeFlutterwavePayment = (paymentData: FlutterwavePaymentData
         reject(new Error('Payment cancelled'));
       },
       customizations: {
-        title: 'UNIOSUN Connect',
+        title: 'University Connect',
         description: 'Session Payment',
         logo: '/favicon.ico',
       },
@@ -59,5 +59,5 @@ export const initializeFlutterwavePayment = (paymentData: FlutterwavePaymentData
 };
 
 export const generateTxRef = () => {
-  return `UNIOSUN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `UNI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };

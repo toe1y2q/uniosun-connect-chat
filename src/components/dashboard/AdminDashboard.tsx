@@ -133,7 +133,7 @@ const AdminDashboard = () => {
               <h1 className="text-xl sm:text-3xl font-bold text-gray-900">
                 Admin Dashboard
               </h1>
-              <p className="text-xs sm:text-base text-gray-600">Manage UNIOSUN Connect Platform</p>
+              <p className="text-xs sm:text-base text-gray-600">Manage University Connect Platform</p>
             </div>
             <Badge className="bg-red-100 text-red-800 self-start sm:self-center text-xs px-2 py-1">
               <Shield className="w-3 h-3 mr-1" />

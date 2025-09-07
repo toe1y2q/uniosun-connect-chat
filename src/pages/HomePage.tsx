@@ -54,7 +54,7 @@ const HomePage = ({
           <motion.div {...fadeInUp}>
             <Badge className="mb-6 bg-green-100 text-green-800 border-green-200 px-4 py-2">
               <Zap className="w-4 h-4 mr-2" />
-              Now Live for UNIOSUN Students & Aspirants
+              Now Live for University Students & Aspirants
             </Badge>
           </motion.div>
           
@@ -63,7 +63,7 @@ const HomePage = ({
           </motion.h1>
           
           <motion.p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed" {...fadeInUp}>
-            Hireveno bridges the gap between UNIOSUN students and aspirants, creating a dynamic learning ecosystem where knowledge flows freely.
+            Hireveno bridges the gap between university students and aspirants, creating a dynamic learning ecosystem where knowledge flows freely.
           </motion.p>
           
           <motion.div className="flex flex-col sm:flex-row gap-4 justify-center items-center" {...fadeInUp}>
@@ -89,7 +89,7 @@ const HomePage = ({
           <motion.div className="text-center mb-12" {...fadeInUp}>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Hireveno?</h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Our platform is designed specifically for the UNIOSUN community, offering tailored solutions for both students and aspirants.
+              Our platform is designed specifically for the university community, offering tailored solutions for both students and aspirants.
             </p>
           </motion.div>
           
@@ -99,7 +99,7 @@ const HomePage = ({
             {[{
             icon: Users,
             title: "Expert Tutoring",
-            description: "Connect with verified UNIOSUN students for personalized learning sessions.",
+            description: "Connect with verified university students for personalized learning sessions.",
             color: "text-green-600"
           }, {
             icon: BookOpen,
@@ -124,7 +124,7 @@ const HomePage = ({
           }, {
             icon: Heart,
             title: "Community Driven",
-            description: "Built by UNIOSUN students, for the UNIOSUN community.",
+            description: "Built by university students, for the university community.",
             color: "text-green-600"
           }].map((feature, index) => <motion.div key={index} variants={fadeInUp}>
                 <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-green-200">
@@ -184,7 +184,7 @@ const HomePage = ({
         <div className="container mx-auto text-center">
           <motion.div {...fadeInUp}>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Transform Your Learning?</h2>
-            <p className="text-xl mb-8 opacity-90">Join thousands of UNIOSUN students and aspirants already using Hireveno</p>
+            <p className="text-xl mb-8 opacity-90">Join thousands of university students and aspirants already using Hireveno</p>
             <Button onClick={onGetStarted} size="lg" className="bg-white text-green-600 hover:bg-gray-100 text-lg px-8 py-4 h-auto">
               Get Started Now
               <ChevronRight className="w-5 h-5 ml-2" />
@@ -203,8 +203,8 @@ const HomePage = ({
               className="h-8 w-auto filter brightness-0 invert"
             />
           </div>
-          <p className="text-gray-400 mb-4">Empowering the UNIOSUN community through connected learning</p>
-          <p className="text-gray-500 text-sm">© 2024 Hireveno. Built with ❤️ for UNIOSUN students and aspirants.</p>
+          <p className="text-gray-400 mb-4">Empowering the university community through connected learning</p>
+          <p className="text-gray-500 text-sm">© 2024 Hireveno. Built with ❤️ for university students and aspirants.</p>
         </div>
       </footer>
     </div>;
