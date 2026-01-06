@@ -148,7 +148,7 @@ const StudentDashboard = () => {
       error={firstError} 
       onRetry={handleRetry}
     >
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 p-2 sm:p-4">
+    <div className="min-h-screen bg-background p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -159,27 +159,27 @@ const StudentDashboard = () => {
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <AvatarUpload size="sm" showUploadButton={false} />
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
+                <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-foreground truncate">
                   Welcome back, {profile?.name}!
                 </h1>
-                <p className="text-xs sm:text-base text-gray-600 truncate">University Student Dashboard</p>
+                <p className="text-xs sm:text-base text-muted-foreground truncate">Student Dashboard</p>
               </div>
             </div>
             <div className="flex items-center gap-1 flex-wrap">
-              <Badge className="bg-green-100 text-green-800 text-xs px-2 py-1">
+              <Badge className="bg-primary/10 text-primary text-xs px-2 py-1">
                 <GraduationCap className="w-3 h-3 mr-1" />
                 Student
               </Badge>
               {profile?.is_verified && (
-                <Badge className="bg-blue-100 text-blue-800 text-xs px-2 py-1">
+                <Badge className="bg-blue-500/10 text-blue-600 text-xs px-2 py-1">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Verified
                 </Badge>
               )}
               {profile?.badge && (
-                <Badge className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1">
+                <Badge className="bg-yellow-500/10 text-yellow-600 text-xs px-2 py-1">
                   <Award className="w-3 h-3 mr-1" />
-                  Certified Tutor
+                  Certified
                 </Badge>
               )}
             </div>
@@ -187,21 +187,21 @@ const StudentDashboard = () => {
 
           {/* Status Cards */}
           {!profile?.is_verified ? (
-            <Card className="mb-3 border-yellow-200 bg-gradient-to-r from-yellow-50 to-yellow-100">
+            <Card className="mb-3 border-yellow-500/30 bg-yellow-500/5">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-full bg-yellow-500 text-white">
                     <Clock className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-yellow-800 text-sm">Account Under Review</h3>
-                    <p className="text-yellow-700 text-xs">Your student account is being verified by our admin team. This may take 24-48 hours.</p>
+                    <h3 className="font-semibold text-yellow-700 text-sm">Account Under Review</h3>
+                    <p className="text-yellow-600 text-xs">Your student account is being verified by our admin team. This may take 24-48 hours.</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ) : !profile?.badge ? (
-            <Card className="mb-3 border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100">
+            <Card className="mb-3 border-blue-500/30 bg-blue-500/5">
               <CardContent className="p-3">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   <div className="flex items-center gap-2 flex-1">
@@ -209,32 +209,32 @@ const StudentDashboard = () => {
                       <BookOpen className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-blue-800 text-sm">Ready to Take the Quiz?</h3>
-                      <p className="text-blue-700 text-xs">Complete the department quiz to become a certified tutor and start earning from sessions.</p>
+                      <h3 className="font-semibold text-blue-700 text-sm">Ready to Take the Quiz?</h3>
+                      <p className="text-blue-600 text-xs">Complete the department quiz to become a certified tutor and start earning.</p>
                     </div>
                   </div>
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 w-full sm:w-auto">
+                  <Button className="text-xs px-3 py-2 w-full sm:w-auto">
                     Take Quiz
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <Card className="mb-3 border-green-200 bg-gradient-to-r from-green-50 to-green-100">
+            <Card className="mb-3 border-primary/30 bg-primary/5">
               <CardContent className="p-3">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   <div className="flex items-center gap-2 flex-1">
-                    <div className="p-2 rounded-full bg-green-600 text-white">
+                    <div className="p-2 rounded-full bg-primary text-primary-foreground">
                       <Award className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-green-800 text-sm">Certified Tutor Active!</h3>
-                      <p className="text-green-700 text-xs">You're now able to receive session bookings and earn money as a verified tutor.</p>
+                      <h3 className="font-semibold text-primary text-sm">Verified Student Active!</h3>
+                      <p className="text-muted-foreground text-xs">You're now able to receive gig applications and earn money.</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold text-green-600">₦{(availableBalance / 100).toLocaleString()}</div>
-                    <p className="text-xs text-green-600">Wallet Balance</p>
+                    <div className="text-lg font-bold text-primary">₦{(availableBalance / 100).toLocaleString()}</div>
+                    <p className="text-xs text-muted-foreground">Wallet Balance</p>
                   </div>
                 </div>
               </CardContent>
@@ -245,60 +245,60 @@ const StudentDashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <div className="w-full relative">
             <div ref={tabsRef} className="overflow-x-auto scrollbar-hide">
-              <TabsList className="flex w-max min-w-full bg-green-100 h-auto p-1 gap-1">
+              <TabsList className="flex w-max min-w-full bg-muted h-auto p-1 gap-1">
                 <TabsTrigger 
                   value="overview" 
                   ref={(el) => registerTab('overview', el)}
-                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs whitespace-nowrap"
                 >
                   Overview
                 </TabsTrigger>
                 <TabsTrigger 
                   value="sessions" 
                   ref={(el) => registerTab('sessions', el)}
-                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs whitespace-nowrap"
                 >
                   Sessions
                 </TabsTrigger>
                 <TabsTrigger 
                   value="wallet" 
                   ref={(el) => registerTab('wallet', el)}
-                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs whitespace-nowrap"
                 >
                   Wallet
                 </TabsTrigger>
                 <TabsTrigger 
                   value="quiz" 
                   ref={(el) => registerTab('quiz', el)}
-                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs whitespace-nowrap"
                 >
                   Quiz
                 </TabsTrigger>
                 <TabsTrigger 
                   value="reviews" 
                   ref={(el) => registerTab('reviews', el)}
-                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs whitespace-nowrap"
                 >
                   Reviews
                 </TabsTrigger>
                 <TabsTrigger 
                   value="appeals" 
                   ref={(el) => registerTab('appeals', el)}
-                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs whitespace-nowrap"
                 >
                   Appeals
                 </TabsTrigger>
                 <TabsTrigger 
                   value="profile" 
                   ref={(el) => registerTab('profile', el)}
-                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs whitespace-nowrap"
                 >
                   Profile
                 </TabsTrigger>
                 <TabsTrigger 
                   value="settings" 
                   ref={(el) => registerTab('settings', el)}
-                  className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2 text-xs whitespace-nowrap"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-3 py-2 text-xs whitespace-nowrap"
                 >
                   Settings
                 </TabsTrigger>
@@ -308,52 +308,52 @@ const StudentDashboard = () => {
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <Card className="border-green-200">
+              <Card className="border-border">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
-                  <CardTitle className="text-xs font-medium">Total Earnings</CardTitle>
-                  <DollarSign className="h-3 w-3 text-green-600" />
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Total Earnings</CardTitle>
+                  <DollarSign className="h-3 w-3 text-primary" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-green-600">₦{(totalEarnings / 100).toLocaleString()}</div>
+                  <div className="text-lg font-bold text-primary">₦{(totalEarnings / 100).toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground">
                     +12% from last month
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-green-200">
+              <Card className="border-border">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
-                  <CardTitle className="text-xs font-medium">Completed Sessions</CardTitle>
-                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Completed Sessions</CardTitle>
+                  <CheckCircle className="h-3 w-3 text-primary" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-green-600">{completedSessions}</div>
+                  <div className="text-lg font-bold text-foreground">{completedSessions}</div>
                   <p className="text-xs text-muted-foreground">
-                    Sessions taught
+                    Sessions completed
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-green-200">
+              <Card className="border-border">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
-                  <CardTitle className="text-xs font-medium">Upcoming Sessions</CardTitle>
-                  <Calendar className="h-3 w-3 text-green-600" />
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Upcoming Sessions</CardTitle>
+                  <Calendar className="h-3 w-3 text-primary" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-green-600">{upcomingSessions}</div>
+                  <div className="text-lg font-bold text-foreground">{upcomingSessions}</div>
                   <p className="text-xs text-muted-foreground">
                     This week
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-green-200">
+              <Card className="border-border">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 pt-3">
-                  <CardTitle className="text-xs font-medium">Wallet Balance</CardTitle>
-                  <Wallet className="h-3 w-3 text-green-600" />
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Wallet Balance</CardTitle>
+                  <Wallet className="h-3 w-3 text-primary" />
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="text-lg font-bold text-green-600">₦{(availableBalance / 100).toLocaleString()}</div>
+                  <div className="text-lg font-bold text-primary">₦{(availableBalance / 100).toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground">
                     Available to withdraw
                   </p>
@@ -361,38 +361,38 @@ const StudentDashboard = () => {
               </Card>
             </div>
 
-            <Card className="border-green-200">
+            <Card className="border-border">
               <CardHeader className="px-3">
-                <CardTitle className="flex items-center gap-2 text-green-800 text-base">
+                <CardTitle className="flex items-center gap-2 text-foreground text-base">
                   <Calendar className="w-4 h-4" />
                   Recent Sessions
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Your latest tutoring sessions
+                  Your latest sessions
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-3">
                 {sessions && sessions.length > 0 ? (
                   <div className="space-y-3">
                     {sessions.slice(0, 5).map((session) => (
-                      <div key={session.id} className="flex flex-col gap-2 p-3 border border-green-200 rounded-lg">
+                      <div key={session.id} className="flex flex-col gap-2 p-3 border border-border rounded-lg">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                            <Users className="w-4 h-4 text-green-600" />
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                            <Users className="w-4 h-4 text-muted-foreground" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-sm truncate">{session.users?.name}</h4>
-                            <p className="text-xs text-gray-600 truncate">
+                            <h4 className="font-semibold text-sm text-foreground truncate">{session.users?.name}</h4>
+                            <p className="text-xs text-muted-foreground truncate">
                               {new Date(session.scheduled_at).toLocaleDateString()} • {session.duration} minutes
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-green-600 text-sm">₦{(session.amount / 100).toLocaleString()}</span>
+                          <span className="font-semibold text-primary text-sm">₦{(session.amount / 100).toLocaleString()}</span>
                           <Badge className={`text-xs px-2 py-1 ${
-                            session.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            session.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                            'bg-yellow-100 text-yellow-800'
+                            session.status === 'completed' ? 'bg-primary/10 text-primary' :
+                            session.status === 'confirmed' ? 'bg-blue-500/10 text-blue-600' :
+                            'bg-yellow-500/10 text-yellow-600'
                           }`}>
                             {session.status}
                           </Badge>
@@ -402,9 +402,9 @@ const StudentDashboard = () => {
                   </div>
                 ) : (
                   <div className="text-center py-6">
-                    <Calendar className="w-8 h-8 text-green-400 mx-auto mb-4" />
-                    <h3 className="text-base font-semibold mb-2">No sessions yet</h3>
-                    <p className="text-sm text-gray-600">Complete your verification and quiz to start receiving bookings</p>
+                    <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-base font-semibold mb-2 text-foreground">No sessions yet</h3>
+                    <p className="text-sm text-muted-foreground">Complete your verification and quiz to start receiving bookings</p>
                   </div>
                 )}
               </CardContent>
@@ -439,9 +439,9 @@ const StudentDashboard = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">
-            <Card className="border-green-200">
+            <Card className="border-border">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-800">
+                <CardTitle className="flex items-center gap-2 text-foreground">
                   <Settings className="w-5 h-5" />
                   Account Settings
                 </CardTitle>
@@ -451,9 +451,9 @@ const StudentDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4 p-4 sm:p-6">
                 <div className="text-center py-6">
-                  <Settings className="w-8 h-8 text-green-400 mx-auto mb-4" />
-                  <h3 className="text-base font-semibold mb-2">Account Settings</h3>
-                  <p className="text-sm text-gray-600">Configure your account preferences and security settings</p>
+                  <Settings className="w-8 h-8 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-base font-semibold mb-2 text-foreground">Account Settings</h3>
+                  <p className="text-sm text-muted-foreground">Configure your account preferences and security settings</p>
                 </div>
               </CardContent>
             </Card>

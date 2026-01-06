@@ -1,7 +1,7 @@
 {
-  "name": "Hireveno - University Connect",
+  "name": "Hireveno - Earn Money While You Study",
   "short_name": "Hireveno",
-  "description": "Connect with university students and aspirants for personalized tutoring sessions",
+  "description": "Nigeria's #1 Student Gig Platform. Find verified gigs, freelance work, and paid opportunities.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -21,7 +21,7 @@
       "type": "image/png"
     }
   ],
-  "categories": ["education", "productivity"],
+  "categories": ["business", "productivity", "finance"],
   "lang": "en",
   "dir": "ltr"
 }

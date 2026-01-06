@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/components/auth/AuthContext";
 import AuthForm from "@/components/auth/AuthForm";
 import StudentDashboard from "@/components/dashboard/StudentDashboard";
 import AspirantDashboard from "@/components/dashboard/AspirantDashboard";
+import EmployerDashboard from "@/components/dashboard/EmployerDashboard";
 import Navigation from "@/components/Navigation";
 import HomePage from "@/pages/HomePage";
 import TalentsPage from "@/pages/TalentsPage";
@@ -20,6 +21,8 @@ import ChatPage from "@/pages/ChatPage";
 import RatingReviewPage from "@/pages/RatingReviewPage";
 import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 import WithdrawalsPage from "@/pages/WithdrawalsPage";
+import BrowseGigsPage from "@/pages/BrowseGigsPage";
+import PostGigPage from "@/pages/PostGigPage";
 import NotFound from "./pages/NotFound";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useState, useEffect } from "react";
@@ -57,13 +60,13 @@ const AppContent = () => {
 
   if (loading && !forceShowApp) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <LoadingSpinner 
             message="Connecting to Hireveno..." 
             size="lg"
           />
-          <p className="mt-4 text-sm text-gray-500">
+          <p className="mt-4 text-sm text-muted-foreground">
             If this takes too long, try refreshing the page
           </p>
         </div>
@@ -92,6 +95,10 @@ const AppContent = () => {
         
         <Route path="/talents" element={
           <TalentsPage onAuthRequired={() => setShowAuth(true)} />
+        } />
+
+        <Route path="/gigs" element={
+          <BrowseGigsPage />
         } />
         
         <Route path="/student/:id" element={
@@ -142,7 +149,7 @@ const AppContent = () => {
 
         <Route path="/profile-settings" element={
           user ? (
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-background">
               <Navigation />
               <ProfileSettingsPage />
             </div>
@@ -150,16 +157,25 @@ const AppContent = () => {
             <Navigate to="/auth" replace />
           )
         } />
+
+        {/* Post Gig Route */}
+        <Route path="/post-gig" element={
+          user ? (
+            <PostGigPage />
+          ) : (
+            <Navigate to="/auth" replace />
+          )
+        } />
         
         <Route path="/dashboard" element={
           user ? (
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-background">
               <Navigation />
               {!profile ? (
                 <div className="min-h-screen flex items-center justify-center">
                   <div className="text-center p-4 sm:p-8">
-                    <h2 className="text-lg sm:text-xl font-semibold mb-4">Setting up your profile...</h2>
-                    <p className="text-sm sm:text-base text-gray-600 mb-4">This may take a moment for new accounts.</p>
+                    <h2 className="text-lg sm:text-xl font-semibold mb-4 text-foreground">Setting up your profile...</h2>
+                    <p className="text-sm sm:text-base text-muted-foreground mb-4">This may take a moment for new accounts.</p>
                     <LoadingSpinner message="Loading your profile..." />
                   </div>
                 </div>
@@ -167,14 +183,15 @@ const AppContent = () => {
                 <>
                   {profile.role === 'student' && <StudentDashboard />}
                   {profile.role === 'aspirant' && <AspirantDashboard />}
+                  {profile.role === 'employer' && <EmployerDashboard />}
                   {profile.role === 'admin' && (
                     <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-8">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
-                        <h2 className="text-lg sm:text-xl font-semibold text-blue-800 mb-2">Admin Access Available</h2>
-                        <p className="text-sm sm:text-base text-blue-700 mb-4">You have administrator privileges. Access the admin panel for advanced features.</p>
+                      <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+                        <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-2">Admin Access Available</h2>
+                        <p className="text-sm sm:text-base text-muted-foreground mb-4">You have administrator privileges. Access the admin panel for advanced features.</p>
                         <button 
                           onClick={() => window.location.href = '/admin'}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium text-sm"
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md font-medium text-sm"
                         >
                           Go to Admin Panel
                         </button>

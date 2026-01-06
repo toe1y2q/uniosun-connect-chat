@@ -72,6 +72,33 @@ export type Database = {
           },
         ]
       }
+      campuses: {
+        Row: {
+          city: string
+          created_at: string | null
+          id: string
+          name: string
+          state: string
+          type: string
+        }
+        Insert: {
+          city: string
+          created_at?: string | null
+          id?: string
+          name: string
+          state: string
+          type: string
+        }
+        Update: {
+          city?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          state?: string
+          type?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string | null
@@ -164,6 +191,163 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      gig_applications: {
+        Row: {
+          cover_letter: string | null
+          created_at: string | null
+          gig_id: string
+          id: string
+          proposed_amount: number | null
+          status: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          cover_letter?: string | null
+          created_at?: string | null
+          gig_id: string
+          id?: string
+          proposed_amount?: number | null
+          status?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          cover_letter?: string | null
+          created_at?: string | null
+          gig_id?: string
+          id?: string
+          proposed_amount?: number | null
+          status?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_applications_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "users_public_min"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gigs: {
+        Row: {
+          applicants_count: number | null
+          budget_max: number | null
+          budget_min: number | null
+          campus_id: string | null
+          category: string
+          city: string | null
+          created_at: string | null
+          description: string
+          duration_estimate: string | null
+          employer_id: string
+          id: string
+          is_featured: boolean | null
+          location_type: string
+          payment_type: string | null
+          skills_required: Json | null
+          state: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          applicants_count?: number | null
+          budget_max?: number | null
+          budget_min?: number | null
+          campus_id?: string | null
+          category: string
+          city?: string | null
+          created_at?: string | null
+          description: string
+          duration_estimate?: string | null
+          employer_id: string
+          id?: string
+          is_featured?: boolean | null
+          location_type: string
+          payment_type?: string | null
+          skills_required?: Json | null
+          state?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          applicants_count?: number | null
+          budget_max?: number | null
+          budget_min?: number | null
+          campus_id?: string | null
+          category?: string
+          city?: string | null
+          created_at?: string | null
+          description?: string
+          duration_estimate?: string | null
+          employer_id?: string
+          id?: string
+          is_featured?: boolean | null
+          location_type?: string
+          payment_type?: string | null
+          skills_required?: Json | null
+          state?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gigs_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "users_public_min"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "verified_students_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -576,12 +760,16 @@ export type Database = {
         Row: {
           account_name: string | null
           account_number: string | null
+          availability: string | null
           badge: boolean | null
           bank_code: string | null
           bank_name: string | null
+          company_name: string | null
           created_at: string | null
           department_id: string | null
           email: string
+          employer_badge: boolean | null
+          employer_verified: boolean | null
           flutterwave_subaccount_id: string | null
           id: string
           is_verified: boolean | null
@@ -591,6 +779,7 @@ export type Database = {
           profile_image: string | null
           quiz_score: number | null
           role: Database["public"]["Enums"]["user_role"]
+          skills: Json | null
           status: Database["public"]["Enums"]["user_status"] | null
           updated_at: string | null
           wallet_balance: number | null
@@ -598,12 +787,16 @@ export type Database = {
         Insert: {
           account_name?: string | null
           account_number?: string | null
+          availability?: string | null
           badge?: boolean | null
           bank_code?: string | null
           bank_name?: string | null
+          company_name?: string | null
           created_at?: string | null
           department_id?: string | null
           email: string
+          employer_badge?: boolean | null
+          employer_verified?: boolean | null
           flutterwave_subaccount_id?: string | null
           id?: string
           is_verified?: boolean | null
@@ -613,6 +806,7 @@ export type Database = {
           profile_image?: string | null
           quiz_score?: number | null
           role?: Database["public"]["Enums"]["user_role"]
+          skills?: Json | null
           status?: Database["public"]["Enums"]["user_status"] | null
           updated_at?: string | null
           wallet_balance?: number | null
@@ -620,12 +814,16 @@ export type Database = {
         Update: {
           account_name?: string | null
           account_number?: string | null
+          availability?: string | null
           badge?: boolean | null
           bank_code?: string | null
           bank_name?: string | null
+          company_name?: string | null
           created_at?: string | null
           department_id?: string | null
           email?: string
+          employer_badge?: boolean | null
+          employer_verified?: boolean | null
           flutterwave_subaccount_id?: string | null
           id?: string
           is_verified?: boolean | null
@@ -635,6 +833,7 @@ export type Database = {
           profile_image?: string | null
           quiz_score?: number | null
           role?: Database["public"]["Enums"]["user_role"]
+          skills?: Json | null
           status?: Database["public"]["Enums"]["user_status"] | null
           updated_at?: string | null
           wallet_balance?: number | null
@@ -822,7 +1021,7 @@ export type Database = {
       session_status: "pending" | "confirmed" | "completed" | "cancelled"
       transaction_status: "pending" | "completed" | "failed"
       transaction_type: "payment" | "withdrawal" | "earning"
-      user_role: "student" | "aspirant" | "admin"
+      user_role: "student" | "aspirant" | "admin" | "employer"
       user_status: "active" | "pending" | "blocked" | "banned"
     }
     CompositeTypes: {
@@ -954,7 +1153,7 @@ export const Constants = {
       session_status: ["pending", "confirmed", "completed", "cancelled"],
       transaction_status: ["pending", "completed", "failed"],
       transaction_type: ["payment", "withdrawal", "earning"],
-      user_role: ["student", "aspirant", "admin"],
+      user_role: ["student", "aspirant", "admin", "employer"],
       user_status: ["active", "pending", "blocked", "banned"],
     },
   },
