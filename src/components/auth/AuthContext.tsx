@@ -264,7 +264,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // If auth user was created, create the profile
       if (authData.user) {
         console.log('Creating user profile...');
-        const profileData = {
+        const profileData: any = {
           id: authData.user.id,
           email,
           name: userData.name,
@@ -276,6 +276,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           wallet_balance: 0,
         };
 
+        // Add employer-specific fields
+        if (userData.role === 'employer') {
+          profileData.company_name = userData.company_name || null;
+          profileData.employer_verified = false;
+          profileData.employer_badge = false;
+        }
         console.log('Profile data to insert:', profileData);
 
         const { data: profileResult, error: profileError } = await supabase

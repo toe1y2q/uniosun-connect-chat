@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +9,7 @@ import { useAuth } from './AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, GraduationCap, Users, Mail, Lock, User, BookOpen, Home } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Users, Mail, Lock, User, BookOpen, Home, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface AuthFormProps {
@@ -24,9 +23,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
     email: '',
     password: '',
     name: '',
-    role: 'aspirant' as 'student' | 'aspirant',
+    role: 'student' as 'student' | 'aspirant' | 'employer',
     jamb_reg: '',
-    department_id: ''
+    department_id: '',
+    company_name: ''
   });
 
   const { signIn, signUp } = useAuth();
@@ -56,15 +56,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
           name: formData.name,
           role: formData.role,
           jamb_reg: formData.role === 'student' ? formData.jamb_reg : undefined,
-          department_id: formData.role === 'student' ? formData.department_id : undefined
+          department_id: formData.role === 'student' ? formData.department_id : undefined,
+          company_name: formData.role === 'employer' ? formData.company_name : undefined
         });
         if (error) throw error;
         
+        const successMessages: Record<string, string> = {
+          student: "Please wait for admin verification before taking the quiz.",
+          aspirant: "You can now browse gigs and start earning!",
+          employer: "You can now post gigs and hire talented students."
+        };
+        
         toast({
           title: "Account created successfully!",
-          description: formData.role === 'student' 
-            ? "Please wait for admin verification before taking the quiz." 
-            : "You can now browse verified students and book sessions."
+          description: successMessages[formData.role]
         });
       }
     } catch (error: any) {
@@ -82,8 +87,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'student': return <GraduationCap className="w-4 h-4" />;
+      case 'employer': return <Building2 className="w-4 h-4" />;
+      default: return <Users className="w-4 h-4" />;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -97,38 +110,36 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                 onClick={onBack}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="p-2 rounded-full bg-white border border-gray-200"
+                className="p-2 rounded-full bg-card border border-border"
               >
-                <ArrowLeft className="w-5 h-5 text-green-600" />
+                <ArrowLeft className="w-5 h-5 text-primary" />
               </motion.button>
             )}
             <div className="flex-1"></div>
-            <Link to="/" className="p-2 rounded-full bg-white border border-gray-200">
-              <Home className="w-5 h-5 text-green-600" />
+            <Link to="/" className="p-2 rounded-full bg-card border border-border">
+              <Home className="w-5 h-5 text-primary" />
             </Link>
           </div>
           
           <div className="flex items-center justify-center gap-3 mb-4">
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-              className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center"
-            >
-              <GraduationCap className="w-6 h-6 text-white" />
-            </motion.div>
-            <h1 className="text-xl font-bold text-green-600">Hireveno</h1>
+            <img 
+              src="/lovable-uploads/bbe1b728-9234-4e9e-95cd-e4112dd8873c.png" 
+              alt="Hireveno Logo" 
+              className="h-10 w-10"
+            />
+            <h1 className="text-xl font-bold text-foreground">Hireveno</h1>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             {isLogin ? "Welcome back!" : "Join our community"}
           </p>
         </div>
 
-        <Card className="shadow-lg border-0 bg-white">
+        <Card className="shadow-lg border-border bg-card">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-lg font-bold text-gray-800">
+            <CardTitle className="text-lg font-bold text-foreground">
               {isLogin ? 'Sign In' : 'Create Account'}
             </CardTitle>
-            <CardDescription className="text-sm text-gray-600">
+            <CardDescription className="text-sm text-muted-foreground">
               {isLogin ? 'Enter your credentials to access your account' : 'Fill in your details to get started'}
             </CardDescription>
           </CardHeader>
@@ -138,11 +149,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
               {!isLogin && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="name" className="text-sm font-medium text-foreground">
                       Full Name
                     </Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                       <Input
                         id="name"
                         type="text"
@@ -150,26 +161,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
                         required
-                        className="pl-10 border-gray-200 focus:border-green-500 focus:ring-green-500"
+                        className="pl-10"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="role" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="role" className="text-sm font-medium text-foreground">
                       I am a...
                     </Label>
                     <Select
                       value={formData.role}
-                      onValueChange={(value: 'student' | 'aspirant') => handleInputChange('role', value)}
+                      onValueChange={(value: 'student' | 'aspirant' | 'employer') => handleInputChange('role', value)}
                     >
-                      <SelectTrigger className="border-gray-200 focus:border-green-500">
+                      <SelectTrigger>
                         <div className="flex items-center gap-2">
-                          {formData.role === 'student' ? (
-                            <GraduationCap className="w-4 h-4 text-gray-400" />
-                          ) : (
-                            <Users className="w-4 h-4 text-gray-400" />
-                          )}
+                          {getRoleIcon(formData.role)}
                           <SelectValue placeholder="Select your role" />
                         </div>
                       </SelectTrigger>
@@ -177,13 +184,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                         <SelectItem value="student">
                           <div className="flex items-center gap-2">
                             <GraduationCap className="w-4 h-4" />
-                            University Student
+                            Student (Earn Money)
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="employer">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4" />
+                            Employer (Hire Students)
                           </div>
                         </SelectItem>
                         <SelectItem value="aspirant">
                           <div className="flex items-center gap-2">
                             <Users className="w-4 h-4" />
-                            Aspirant
+                            Aspirant (Get Guidance)
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -193,11 +206,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                   {formData.role === 'student' && (
                     <>
                       <div className="space-y-2">
-                        <Label htmlFor="jamb_reg" className="text-sm font-medium text-gray-700">
+                        <Label htmlFor="jamb_reg" className="text-sm font-medium text-foreground">
                           JAMB Registration Number
                         </Label>
                         <div className="relative">
-                          <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                           <Input
                             id="jamb_reg"
                             type="text"
@@ -205,20 +218,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                             value={formData.jamb_reg}
                             onChange={(e) => handleInputChange('jamb_reg', e.target.value)}
                             required
-                            className="pl-10 border-gray-200 focus:border-green-500 focus:ring-green-500"
+                            className="pl-10"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="department" className="text-sm font-medium text-gray-700">
+                        <Label htmlFor="department" className="text-sm font-medium text-foreground">
                           Department
                         </Label>
                         <Select
                           value={formData.department_id}
                           onValueChange={(value) => handleInputChange('department_id', value)}
                         >
-                          <SelectTrigger className="border-gray-200 focus:border-green-500">
+                          <SelectTrigger>
                             <SelectValue placeholder="Select your department" />
                           </SelectTrigger>
                           <SelectContent className="max-h-60">
@@ -232,15 +245,34 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                       </div>
                     </>
                   )}
+
+                  {formData.role === 'employer' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="company_name" className="text-sm font-medium text-foreground">
+                        Company Name (Optional)
+                      </Label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          id="company_name"
+                          type="text"
+                          placeholder="Enter your company name"
+                          value={formData.company_name}
+                          onChange={(e) => handleInputChange('company_name', e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="email" className="text-sm font-medium text-foreground">
                   Email Address
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     id="email"
                     type="email"
@@ -248,17 +280,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     required
-                    className="pl-10 border-gray-200 focus:border-green-500 focus:ring-green-500"
+                    className="pl-10"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="password" className="text-sm font-medium text-foreground">
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     id="password"
                     type="password"
@@ -266,7 +298,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     required
-                    className="pl-10 border-gray-200 focus:border-green-500 focus:ring-green-500"
+                    className="pl-10"
                   />
                 </div>
               </div>
@@ -274,11 +306,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium transition-all duration-200"
+                className="w-full py-2 font-medium"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     Processing...
                   </div>
                 ) : (
@@ -288,13 +320,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
             </form>
 
             <div className="mt-4 text-center">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 {isLogin ? "Don't have an account?" : "Already have an account?"}
               </p>
               <Button
                 variant="link"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-green-600 hover:text-green-700 font-medium p-0 h-auto text-sm"
+                className="text-primary hover:text-primary/80 font-medium p-0 h-auto text-sm"
               >
                 {isLogin ? 'Sign up here' : 'Sign in here'}
               </Button>
