@@ -12,11 +12,14 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import SettlementManager from '@/components/payment/SettlementManager';
-import { Users, GraduationCap, CheckCircle, XCircle, Eye, Shield, BarChart3, Clock, Flag, Wallet, Settings } from 'lucide-react';
+import { Users, GraduationCap, CheckCircle, XCircle, Eye, Shield, BarChart3, Clock, Flag, Wallet, Settings, Briefcase, Building2, Scale } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import AdminModerationPanel from './AdminModerationPanel';
 import PlatformAnalytics from '@/components/analytics/PlatformAnalytics';
+import GigModerationPanel from '@/components/admin/GigModerationPanel';
+import EmployerVerificationPanel from '@/components/admin/EmployerVerificationPanel';
+import DisputeResolutionPanel from '@/components/admin/DisputeResolutionPanel';
 
 const AdminDashboard = () => {
   const { profile } = useAuth();
@@ -226,24 +229,30 @@ const AdminDashboard = () => {
 
         <Tabs defaultValue="verification" className="space-y-4">
           <ScrollArea className="w-full">
-            <TabsList className="flex w-max min-w-full bg-green-100 h-auto p-1 gap-1">
-              <TabsTrigger value="verification" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-xs px-2 py-2 whitespace-nowrap">
+            <TabsList className="flex w-max min-w-full bg-primary/10 h-auto p-1 gap-1">
+              <TabsTrigger value="verification" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2 whitespace-nowrap">
                 Student Verification
               </TabsTrigger>
-              <TabsTrigger value="moderation" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-xs px-2 py-2 whitespace-nowrap">
+              <TabsTrigger value="gigs" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2 whitespace-nowrap">
+                <Briefcase className="w-3 h-3 mr-1" />
+                Gig Moderation
+              </TabsTrigger>
+              <TabsTrigger value="employers" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2 whitespace-nowrap">
+                <Building2 className="w-3 h-3 mr-1" />
+                Employers
+              </TabsTrigger>
+              <TabsTrigger value="disputes" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2 whitespace-nowrap">
+                <Scale className="w-3 h-3 mr-1" />
+                Disputes
+              </TabsTrigger>
+              <TabsTrigger value="moderation" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2 whitespace-nowrap">
                 <Flag className="w-3 h-3 mr-1" />
                 Moderation
               </TabsTrigger>
-              <TabsTrigger value="users" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-xs px-2 py-2 whitespace-nowrap">
-                User Management
-              </TabsTrigger>
-              <TabsTrigger value="sessions" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-xs px-2 py-2 whitespace-nowrap">
-                Session Monitoring
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-xs px-2 py-2 whitespace-nowrap">
+              <TabsTrigger value="analytics" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2 whitespace-nowrap">
                 Analytics
               </TabsTrigger>
-              <TabsTrigger value="settlements" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-xs px-2 py-2 whitespace-nowrap">
+              <TabsTrigger value="settlements" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2 whitespace-nowrap">
                 Settlements
               </TabsTrigger>
             </TabsList>
@@ -324,6 +333,18 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="gigs">
+            <GigModerationPanel />
+          </TabsContent>
+
+          <TabsContent value="employers">
+            <EmployerVerificationPanel />
+          </TabsContent>
+
+          <TabsContent value="disputes">
+            <DisputeResolutionPanel />
           </TabsContent>
 
           <TabsContent value="moderation">
