@@ -23,6 +23,7 @@ import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 import WithdrawalsPage from "@/pages/WithdrawalsPage";
 import BrowseGigsPage from "@/pages/BrowseGigsPage";
 import PostGigPage from "@/pages/PostGigPage";
+import GigDetailPage from "@/pages/GigDetailPage";
 import NotFound from "./pages/NotFound";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useState, useEffect } from "react";
@@ -99,6 +100,10 @@ const AppContent = () => {
 
         <Route path="/gigs" element={
           <BrowseGigsPage />
+        } />
+
+        <Route path="/gig/:id" element={
+          <GigDetailPage />
         } />
         
         <Route path="/student/:id" element={
